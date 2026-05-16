@@ -1,137 +1,120 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState } from "react";
+import * as Location from "expo-location";
+import { useRef, useState } from "react";
 import {
-  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
-  type LayoutChangeEvent
 } from "react-native";
 import { CircleStop, Play } from "lucide-react-native";
 
-import { AROverlay } from "./src/components/AROverlay";
-import { detectGroundPlane } from "./src/services/groundPlaneDetector";
+const API_URL = "http://172.20.10.2:3001";
 
 export default function App() {
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [isRecording, setIsRecording] = useState(false);
-  const [clipUri, setClipUri] = useState<string>();
-  const [overlaySize, setOverlaySize] = useState({ width: 1, height: 1 });
-  const [scanStartedAt, setScanStartedAt] = useState<number>();
-  const [groundPlane, setGroundPlane] = useState(() => detectGroundPlane({ elapsedMs: 0, isScanning: false }));
+  const [loading, setLoading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const hasCameraPermission = permission?.granted;
-
-  const onOverlayLayout = (event: LayoutChangeEvent) => {
-    const { height, width } = event.nativeEvent.layout;
-    setOverlaySize({ height: Math.max(1, height), width: Math.max(1, width) });
-  };
-
-  const startScan = async () => {
-    if (isRecording) {
-      cameraRef.current?.stopRecording();
-      setIsRecording(false);
-      return;
-    }
-
-    setClipUri(undefined);
-    setScanStartedAt(Date.now());
-    setIsRecording(true);
-
-    if (hasCameraPermission && Platform.OS !== "web") {
-      try {
-        const recording = await cameraRef.current?.recordAsync({
-          maxDuration: 900
-        });
-
-        if (recording?.uri) {
-          setClipUri(recording.uri);
-        }
-      } catch (error) {
-        console.warn("Recording failed", error);
-      } finally {
-        setIsRecording(false);
-      }
-    }
-  };
-
-  const resetScan = () => {
-    if (isRecording) {
-      cameraRef.current?.stopRecording();
-    }
-
-    setIsRecording(false);
-    setClipUri(undefined);
-    setScanStartedAt(undefined);
-  };
 
   const requestCamera = async () => {
     await requestPermission();
   };
 
-  useEffect(() => {
-    const updateGroundPlane = () => {
-      setGroundPlane(
-        detectGroundPlane({
-          elapsedMs: scanStartedAt ? Date.now() - scanStartedAt : 0,
-          isScanning: isRecording
-        })
-      );
-    };
+  const startScan = async () => {
+    try {
+      if (!cameraRef.current) {
+        console.log("Camera not ready yet");
+        return;
+      }
 
-    updateGroundPlane();
+      setIsScanning((prev) => !prev);
 
-    if (!isRecording) {
-      return;
+      console.log("Scan toggled:", !isScanning);
+    } catch (err) {
+      console.log("Scan error:", err);
     }
+  };
 
-    const interval = setInterval(updateGroundPlane, 90);
-
-    return () => clearInterval(interval);
-  }, [isRecording, scanStartedAt]);
+  const reportPothole = async () => {
+    try {
+      setLoading(true);
+  
+      // 1. ask permission
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
+  
+      if (status !== "granted") {
+        console.log("Location permission denied");
+        return;
+      }
+  
+      // 2. get real GPS
+      const location = await Location.getCurrentPositionAsync({});
+  
+      const { latitude, longitude } = location.coords;
+  
+      // 3. send to backend
+      const res = await fetch(`${API_URL}/potholes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          latitude,
+          longitude,
+        }),
+      });
+  
+      const data = await res.json();
+  
+      // 4. feedback based on merge result
+      if (data.merged) {
+        console.log("Merged with nearby pothole 👍", data.pothole);
+      } else {
+        console.log("New pothole created 🚧", data.pothole);
+      }
+    } catch (err) {
+      console.log("API error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
+
       <View style={styles.cameraLayer}>
         {hasCameraPermission ? (
           <CameraView
-            active
-            facing="back"
-            mode="video"
-            mute
             ref={cameraRef}
             style={StyleSheet.absoluteFill}
-            videoStabilizationMode="auto"
+            facing="back"
           />
         ) : (
-          <View style={styles.fallback} />
+          <View style={styles.fallback}>
+            <Text style={{ color: "white" }}>No camera permission</Text>
+          </View>
         )}
-        <View style={styles.scanShade} />
-        <AROverlay
-          groundPlane={groundPlane}
-          isActive={isRecording}
-          onLayout={onOverlayLayout}
-          height={overlaySize.height}
-          width={overlaySize.width}
-        />
       </View>
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
-          <Text style={styles.brand}>SheepAI Terrain Mesh</Text>
-          <View style={[styles.liveBadge, isRecording && styles.liveBadgeActive]}>
-            <View style={[styles.liveDot, isRecording && styles.liveDotActive]} />
-            <Text style={styles.liveText}>{isRecording ? "REC" : "IDLE"}</Text>
-          </View>
+          <Text style={styles.brand}>Pothole AI</Text>
         </View>
 
         {!hasCameraPermission && (
-          <Pressable onPress={requestCamera} style={({ pressed }) => [styles.permissionButton, pressed && styles.pressed]}>
-            <Text style={styles.permissionText}>Enable camera</Text>
+          <Pressable
+            onPress={requestCamera}
+            style={styles.permissionButton}
+          >
+            <Text style={styles.permissionText}>
+              Enable Camera
+            </Text>
           </Pressable>
         )}
 
@@ -139,26 +122,27 @@ export default function App() {
 
         <View style={styles.controls}>
           <Pressable
-            accessibilityLabel={isRecording ? "Stop recording" : "Start recording"}
             onPress={startScan}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              isRecording && styles.stopButton,
-              pressed && styles.pressed
-            ]}
+            style={styles.primaryButton}
           >
-            {isRecording ? <CircleStop color="#ffffff" size={24} /> : <Play color="#031018" fill="#031018" size={24} />}
-            <Text style={[styles.primaryText, !isRecording && styles.primaryTextDark]}>
-              {isRecording ? "Stop" : "Scan"}
+            {isScanning ? (
+              <CircleStop color="white" size={24} />
+            ) : (
+              <Play color="white" size={24} />
+            )}
+
+            <Text style={styles.primaryText}>
+              {isScanning ? "Stop Scan" : "Start Scan"}
             </Text>
           </Pressable>
 
           <Pressable
-            accessibilityLabel="Reset"
-            onPress={resetScan}
-            style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+            onPress={reportPothole}
+            style={styles.secondaryButton}
           >
-            <Text style={styles.secondaryText}>Reset</Text>
+            <Text style={styles.secondaryText}>
+              Report Pothole
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -166,151 +150,70 @@ export default function App() {
   );
 }
 
-function RoadFallback() {
-  return (
-    <View style={styles.fallback}>
-      <View style={styles.horizon} />
-      <View style={styles.road}>
-        <View style={styles.centerLine} />
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#000"
+    backgroundColor: "#000",
   },
   cameraLayer: {
     ...StyleSheet.absoluteFillObject,
-    overflow: "hidden"
   },
   safeArea: {
     flex: 1,
-    justifyContent: "space-between"
+    justifyContent: "space-between",
   },
   topBar: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12
+    padding: 16,
   },
   brand: {
-    color: "#ffffff",
-    fontSize: 24,
-    fontWeight: "600"
-  },
-  liveBadge: {
-    alignItems: "center",
-    backgroundColor: "#1e293b",
-    borderRadius: 20,
-    flexDirection: "row",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6
-  },
-  liveBadgeActive: {
-    backgroundColor: "#7f1d1d"
-  },
-  liveDot: {
-    backgroundColor: "#64748b",
-    borderRadius: 4,
-    height: 8,
-    width: 8
-  },
-  liveDotActive: {
-    backgroundColor: "#ff3b30"
-  },
-  liveText: {
-    color: "#e2e8f0",
-    fontSize: 12,
-    fontWeight: "500"
-  },
-  permissionButton: {
-    alignSelf: "center",
-    backgroundColor: "#3b82f6",
-    borderRadius: 8,
-    marginVertical: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12
-  },
-  permissionText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600"
-  },
-  pressed: {
-    opacity: 0.7
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "600",
   },
   spacer: {
-    flex: 1
+    flex: 1,
   },
   controls: {
-    alignItems: "center",
+    padding: 16,
     gap: 12,
-    paddingBottom: 16,
-    paddingHorizontal: 16
   },
   primaryButton: {
-    alignItems: "center",
-    backgroundColor: "#10b981",
-    borderRadius: 12,
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
+    backgroundColor: "#10b981",
+    padding: 14,
+    borderRadius: 12,
     justifyContent: "center",
-    minHeight: 48,
-    paddingHorizontal: 20,
-    width: "100%"
-  },
-  stopButton: {
-    backgroundColor: "#ef4444"
+    alignItems: "center",
   },
   primaryText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600"
-  },
-  primaryTextDark: {
-    color: "#031018"
+    color: "#fff",
+    fontWeight: "600",
   },
   secondaryButton: {
+    backgroundColor: "#374151",
+    padding: 14,
+    borderRadius: 12,
     alignItems: "center",
-    backgroundColor: "#4b5563",
-    borderRadius: 8,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    width: "100%"
   },
   secondaryText: {
-    color: "#e2e8f0",
-    fontSize: 14,
-    fontWeight: "500"
+    color: "#fff",
   },
-  scanShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.15)",
-    pointerEvents: "none"
+  permissionButton: {
+    backgroundColor: "#3b82f6",
+    margin: 16,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  permissionText: {
+    color: "#fff",
+    fontWeight: "600",
   },
   fallback: {
-    backgroundColor: "#334155",
     flex: 1,
-    justifyContent: "center"
-  },
-  horizon: {
-    backgroundColor: "#64748b",
-    flex: 0.5
-  },
-  road: {
+    justifyContent: "center",
     alignItems: "center",
-    flex: 0.5,
-    justifyContent: "center"
+    backgroundColor: "#111",
   },
-  centerLine: {
-    backgroundColor: "#fbbf24",
-    height: 3,
-    width: "100%"
-  }
 });

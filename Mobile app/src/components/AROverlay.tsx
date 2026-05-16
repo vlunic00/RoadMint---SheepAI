@@ -1,6 +1,6 @@
-import { Canvas, Circle, Group, Line, Path, Skia, vec } from "@shopify/react-native-skia";
 import { useMemo } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import Svg, { Circle, Line, Polygon } from "react-native-svg";
 
 import type { GroundPlaneDetection } from "../types/terrain";
 
@@ -17,54 +17,61 @@ export function AROverlay({ groundPlane, height, isActive, onLayout, width }: Pr
     () =>
       groundPlane.mesh.map((line) => ({
         ...line,
-        p1: vec(line.p1.x * width, line.p1.y * height),
-        p2: vec(line.p2.x * width, line.p2.y * height)
+        p1: { x: line.p1.x * width, y: line.p1.y * height },
+        p2: { x: line.p2.x * width, y: line.p2.y * height }
       })),
     [groundPlane.mesh, height, width]
   );
 
   const anchorPoints = useMemo(
-    () => groundPlane.anchors.map((anchor) => vec(anchor.x * width, anchor.y * height)),
+    () => groundPlane.anchors.map((anchor) => ({ x: anchor.x * width, y: anchor.y * height })),
     [groundPlane.anchors, height, width]
   );
 
-  const planePath = useMemo(() => {
-    const path = Skia.Path.Make();
-    const first = anchorPoints[0];
-
-    if (!first) {
-      return path;
-    }
-
-    path.moveTo(first.x, first.y);
-    anchorPoints.slice(1).forEach((point) => path.lineTo(point.x, point.y));
-    path.close();
-
-    return path;
-  }, [anchorPoints]);
-
+  const planePoints = anchorPoints.map((point) => `${point.x},${point.y}`).join(" ");
   const confidence = Math.round(groundPlane.confidence * 100);
   const meshOpacity = isActive ? 1 : 0.4;
 
   return (
-    <View onLayout={onLayout} pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Canvas style={StyleSheet.absoluteFill}>
-        <Group opacity={meshOpacity}>
-          <Path color="rgba(12, 245, 180, 0.12)" path={planePath} style="fill" />
-          {meshLines.map((line, index) => (
-            <Line
-              color={`rgba(18, 255, 190, ${line.opacity.toFixed(3)})`}
-              key={`mesh-${index}`}
-              p1={line.p1}
-              p2={line.p2}
-              strokeWidth={line.strokeWidth}
+    <View onLayout={onLayout} pointerEvents="none" style={styles.overlay}>
+      <Svg height="100%" style={StyleSheet.absoluteFill} viewBox={`0 0 ${width} ${height}`} width="100%">
+        {isActive && (
+          <Polygon
+            fill="#0cf5b4"
+            fillOpacity={0.16 * meshOpacity}
+            points={planePoints}
+            stroke="#7dd3fc"
+            strokeOpacity={0.36 * meshOpacity}
+            strokeWidth={1.5}
+          />
+        )}
+
+        {meshLines.map((line) => (
+          <Line
+            key={line.id}
+            opacity={Math.min(1, line.opacity * meshOpacity)}
+            stroke="#12ffbe"
+            strokeLinecap="round"
+            strokeWidth={line.strokeWidth}
+            x1={line.p1.x}
+            x2={line.p2.x}
+            y1={line.p1.y}
+            y2={line.p2.y}
+          />
+        ))}
+
+        {isActive &&
+          anchorPoints.map((point, index) => (
+            <Circle
+              cx={point.x}
+              cy={point.y}
+              fill="#7dd3fc"
+              fillOpacity={0.95}
+              key={`anchor-${index}`}
+              r={4}
             />
           ))}
-          {anchorPoints.map((point, index) => (
-            <Circle color="rgba(125, 211, 252, 0.9)" cx={point.x} cy={point.y} key={`anchor-${index}`} r={3.5} />
-          ))}
-        </Group>
-      </Canvas>
+      </Svg>
       {isActive && (
         <View style={styles.statusPill}>
           <View style={[styles.statusDot, groundPlane.isGrounded && styles.statusDotLocked]} />
@@ -76,6 +83,11 @@ export function AROverlay({ groundPlane, height, isActive, onLayout, width }: Pr
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    elevation: 3,
+    zIndex: 3
+  },
   statusDot: {
     backgroundColor: "#fbbf24",
     borderRadius: 4,
