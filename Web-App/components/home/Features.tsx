@@ -39,7 +39,7 @@ const FEATURES = [
 
 export default function Features() {
   return (
-    <section className="home-inner">
+    <section id="features" className="home-inner">
       <p className="eyebrow">Platforma</p>
 
       <div className="features-head">

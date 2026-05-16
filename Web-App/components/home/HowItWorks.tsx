@@ -23,7 +23,7 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section className="home-inner">
+    <section id="how-it-works" className="home-inner">
       <p className="eyebrow">Kako funkcionira</p>
 
       <div className="how-grid">

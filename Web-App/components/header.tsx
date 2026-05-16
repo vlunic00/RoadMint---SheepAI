@@ -38,10 +38,10 @@ export default function Header({
 
         {/* CENTER NAV (desktop) */}
         <nav className="hidden md:flex gap-8 text-sm">
-          <a className="text-gray-400 hover:text-orange-400">HOW IT WORKS</a>
-          <a className="text-gray-400 hover:text-orange-400">FEATURES</a>
-          <a className="text-gray-400 hover:text-orange-400">LIVE MAP</a>
-          <a className="text-gray-400 hover:text-orange-400">REPORT ISSUE</a>
+          <Link href="/#how-it-works" className="text-gray-400 hover:text-orange-400">KAKO FUNKCIONIRA</Link>
+          <Link href="/#features" className="text-gray-400 hover:text-orange-400">ZNAČAJKE</Link>
+          <Link href="/map" className="text-gray-400 hover:text-orange-400">MAPA UŽIVO</Link>
+          <Link href="/report" className="text-gray-400 hover:text-orange-400">PRIJAVI PROBLEM</Link>
         </nav>
 
         {/* RIGHT (desktop buttons) */}
@@ -50,14 +50,14 @@ export default function Header({
             onClick={onLiveToggle}
             className="px-4 py-2 text-sm border border-orange-500 text-orange-400 rounded-lg hover:bg-orange-500 hover:text-black transition"
           >
-            Live Feed
+            Uživo
           </button>
 
           <Link
             href="/login"
             className="px-4 py-2 text-sm bg-orange-500 text-black rounded-lg hover:bg-orange-400 transition"
           >
-            Sign In
+            Prijava
           </Link>
         </div>
 
@@ -75,10 +75,10 @@ export default function Header({
         <div className="md:hidden px-4 pb-5 bg-black border-t border-white/10">
 
           <nav className="flex flex-col items-center gap-4 text-sm py-4">
-            <a className="text-gray-400 hover:text-orange-400">HOW IT WORKS</a>
-            <a className="text-gray-400 hover:text-orange-400">FEATURES</a>
-            <a className="text-gray-400 hover:text-orange-400">LIVE MAP</a>
-            <a className="text-gray-400 hover:text-orange-400">REPORT ISSUE</a>
+            <Link href="/#how-it-works" className="text-gray-400 hover:text-orange-400">KAKO FUNKCIONIRA</Link>
+            <Link href="/#features" className="text-gray-400 hover:text-orange-400">ZNAČAJKE</Link>
+            <Link href="/map" className="text-gray-400 hover:text-orange-400">MAPA UŽIVO</Link>
+            <Link href="/report" className="text-gray-400 hover:text-orange-400">PRIJAVI PROBLEM</Link>
           </nav>
 
           <div className="flex flex-col items-center gap-3">
@@ -86,14 +86,14 @@ export default function Header({
               onClick={handleLiveClick}
               className="w-full max-w-xs px-3 py-1.5 text-sm border border-orange-500 text-orange-400 rounded-lg"
             >
-              Live Feed
+              Uživo
             </button>
 
             <Link
               href="/login"
               className="w-full max-w-xs px-3 py-1.5 text-sm bg-orange-500 text-black rounded-lg text-center"
             >
-              Sign In
+              Prijava
             </Link>
           </div>
         </div>
