@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+type UpdateItem = {
+  id: string;
+  status: "fixed" | "in progress";
+  location: string;
+  city: string;
+  timestamp: string;
+};
 
 export default function LiveFeedPanel({
   open,
@@ -9,6 +17,9 @@ export default function LiveFeedPanel({
   open: boolean;
   onClose: () => void;
 }) {
+  const [data, setData] = useState<UpdateItem[]>([]);
+
+  // ESC close
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -18,6 +29,21 @@ export default function LiveFeedPanel({
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
+  // load JSON
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/data/liveUpdates.json");
+        const json = await res.json();
+        setData(json);
+      } catch (err) {
+        console.error("Failed to load live updates:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <div
       className={`
@@ -26,7 +52,7 @@ export default function LiveFeedPanel({
 
         w-full md:w-80 md:right-0
 
-        ${open ? "translate-x-0" : "translate-x-full md:translate-x-full"}
+        ${open ? "translate-x-0" : "translate-x-full"}
       `}
     >
       {/* HEADER */}
@@ -50,22 +76,45 @@ export default function LiveFeedPanel({
       </div>
 
       {/* CONTENT */}
-      <div className="p-4 text-sm text-gray-300 space-y-3">
+      <div className="p-4 text-sm text-gray-300 space-y-3 overflow-y-auto">
+
         <div className="text-gray-500 text-xs">
-          Real-time system activity
+          Real-time infrastructure status
         </div>
 
-        <div className="space-y-2">
-          <div className="p-2 border border-white/10 rounded">
-            🚧 Pothole detected
+        {data.map((item) => (
+          <div
+            key={item.id}
+            className="p-3 border border-white/10 rounded space-y-1"
+          >
+            {/* STATUS */}
+            <div className="flex items-center justify-between">
+              <span
+                className={
+                  item.status === "fixed"
+                    ? "text-green-400 font-semibold"
+                    : "text-orange-400 font-semibold"
+                }
+              >
+                {item.status.toUpperCase()}
+              </span>
+
+              <span className="text-xs text-gray-500">
+                {new Date(item.timestamp).toLocaleString()}
+              </span>
+            </div>
+
+            {/* LOCATION */}
+            <div className="text-gray-300">
+              {item.location}
+            </div>
+
+            {/* CITY */}
+            <div className="text-xs text-gray-500">
+              {item.city}
+            </div>
           </div>
-          <div className="p-2 border border-white/10 rounded">
-            🌧 Flooding update
-          </div>
-          <div className="p-2 border border-white/10 rounded">
-            ⚠ Traffic anomaly detected
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
