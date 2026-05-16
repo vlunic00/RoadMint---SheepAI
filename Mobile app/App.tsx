@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -10,53 +10,17 @@ import {
   View,
   type LayoutChangeEvent
 } from "react-native";
+import { CircleStop, Play } from "lucide-react-native";
 
 import { AROverlay } from "./src/components/AROverlay";
-import { AssessmentPanel } from "./src/components/AssessmentPanel";
-import { ControlDock } from "./src/components/ControlDock";
-import { DamageFeed } from "./src/components/DamageFeed";
-import { detectRoadDamage, summarizeAssessment } from "./src/services/damageDetector";
-import type { DamageDetection } from "./src/types/damage";
-
-const MAX_DETECTIONS = 24;
 
 export default function App() {
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isRecording, setIsRecording] = useState(false);
   const [clipUri, setClipUri] = useState<string>();
-  const [detections, setDetections] = useState<DamageDetection[]>([]);
-  const [scanStartedAt, setScanStartedAt] = useState<number>();
   const [overlaySize, setOverlaySize] = useState({ width: 1, height: 1 });
-  const [scanAggression, setScanAggression] = useState(0.36);
   const hasCameraPermission = permission?.granted;
-
-  const summary = useMemo(() => summarizeAssessment(detections), [detections]);
-  const elapsedMs = scanStartedAt ? Date.now() - scanStartedAt : 0;
-  const speedKmh = 34 + Math.sin(elapsedMs / 3100) * 7;
-
-  useEffect(() => {
-    if (!isRecording || !scanStartedAt) {
-      return undefined;
-    }
-
-    const interval = setInterval(() => {
-      const next = detectRoadDamage({
-        elapsedMs: Date.now() - scanStartedAt,
-        scanAggression,
-        speedKmh
-      });
-
-      setDetections((current) => {
-        const merged = [...next, ...current];
-        const unique = new Map<string, DamageDetection>();
-        merged.forEach((detection) => unique.set(detection.id, detection));
-        return Array.from(unique.values()).slice(0, MAX_DETECTIONS);
-      });
-    }, 950);
-
-    return () => clearInterval(interval);
-  }, [isRecording, scanAggression, scanStartedAt, speedKmh]);
 
   const onOverlayLayout = (event: LayoutChangeEvent) => {
     const { height, width } = event.nativeEvent.layout;
@@ -71,8 +35,6 @@ export default function App() {
     }
 
     setClipUri(undefined);
-    setDetections([]);
-    setScanStartedAt(Date.now());
     setIsRecording(true);
 
     if (hasCameraPermission && Platform.OS !== "web") {
@@ -98,10 +60,7 @@ export default function App() {
     }
 
     setIsRecording(false);
-    setDetections([]);
     setClipUri(undefined);
-    setScanStartedAt(undefined);
-    setScanAggression(0.36);
   };
 
   const requestCamera = async () => {
@@ -123,24 +82,20 @@ export default function App() {
             videoStabilizationMode="auto"
           />
         ) : (
-          <RoadFallback />
+          <View style={styles.fallback} />
         )}
         <View style={styles.scanShade} />
         <AROverlay
-          detections={detections}
-          height={overlaySize.height}
           isActive={isRecording}
           onLayout={onOverlayLayout}
+          height={overlaySize.height}
           width={overlaySize.width}
         />
       </View>
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
-          <View>
-            <Text style={styles.brand}>SheepAI</Text>
-            <Text style={styles.subtitle}>road surface assessment</Text>
-          </View>
+          <Text style={styles.brand}>SheepAI Terrain Mesh</Text>
           <View style={[styles.liveBadge, isRecording && styles.liveBadgeActive]}>
             <View style={[styles.liveDot, isRecording && styles.liveDotActive]} />
             <Text style={styles.liveText}>{isRecording ? "REC" : "IDLE"}</Text>
@@ -155,24 +110,29 @@ export default function App() {
 
         <View style={styles.spacer} />
 
-        <View style={styles.bottomStack}>
-          <AssessmentPanel speedKmh={speedKmh} summary={summary} />
-          <DamageFeed detections={detections} />
-          <View style={styles.tuningRow}>
-            {[0.2, 0.36, 0.56, 0.74].map((value) => (
-              <Pressable
-                accessibilityLabel={`Set sensitivity ${value}`}
-                key={value}
-                onPress={() => setScanAggression(value)}
-                style={[styles.tuningPill, scanAggression === value && styles.tuningPillActive]}
-              >
-                <Text style={[styles.tuningText, scanAggression === value && styles.tuningTextActive]}>
-                  {Math.round(value * 100)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <ControlDock clipUri={clipUri} isRecording={isRecording} onPrimaryPress={startScan} onReset={resetScan} />
+        <View style={styles.controls}>
+          <Pressable
+            accessibilityLabel={isRecording ? "Stop recording" : "Start recording"}
+            onPress={startScan}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              isRecording && styles.stopButton,
+              pressed && styles.pressed
+            ]}
+          >
+            {isRecording ? <CircleStop color="#ffffff" size={24} /> : <Play color="#031018" fill="#031018" size={24} />}
+            <Text style={[styles.primaryText, !isRecording && styles.primaryTextDark]}>
+              {isRecording ? "Stop" : "Scan"}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityLabel="Reset"
+            onPress={resetScan}
+            style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.secondaryText}>Reset</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
@@ -185,174 +145,146 @@ function RoadFallback() {
       <View style={styles.horizon} />
       <View style={styles.road}>
         <View style={styles.centerLine} />
-        <View style={[styles.centerLine, styles.centerLineSecond]} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  bottomStack: {
-    gap: 10
+  root: {
+    flex: 1,
+    backgroundColor: "#000"
+  },
+  cameraLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden"
+  },
+  safeArea: {
+    flex: 1,
+    justifyContent: "space-between"
+  },
+  topBar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12
   },
   brand: {
     color: "#ffffff",
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: 0,
-    lineHeight: 32
-  },
-  cameraLayer: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    backgroundColor: "#07131a"
-  },
-  centerLine: {
-    alignSelf: "center",
-    backgroundColor: "rgba(255,255,255,0.58)",
-    height: "22%",
-    marginTop: "38%",
-    width: 5
-  },
-  centerLineSecond: {
-    marginTop: "18%"
-  },
-  fallback: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    backgroundColor: "#0e7490"
-  },
-  horizon: {
-    backgroundColor: "#7dd3fc",
-    height: "42%",
-    opacity: 0.62
+    fontSize: 24,
+    fontWeight: "600"
   },
   liveBadge: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderColor: "rgba(255,255,255,0.12)",
-    borderRadius: 8,
-    borderWidth: 1,
+    backgroundColor: "#1e293b",
+    borderRadius: 20,
     flexDirection: "row",
-    gap: 7,
+    gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 8
+    paddingVertical: 6
   },
   liveBadgeActive: {
-    backgroundColor: "rgba(239,68,68,0.22)",
-    borderColor: "rgba(248,113,113,0.42)"
+    backgroundColor: "#7f1d1d"
   },
   liveDot: {
-    backgroundColor: "#94a3b8",
+    backgroundColor: "#64748b",
     borderRadius: 4,
     height: 8,
     width: 8
   },
   liveDotActive: {
-    backgroundColor: "#f87171"
+    backgroundColor: "#ff3b30"
   },
   liveText: {
-    color: "#ffffff",
+    color: "#e2e8f0",
     fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 0
+    fontWeight: "500"
   },
   permissionButton: {
-    alignSelf: "flex-start",
-    backgroundColor: "#ffffff",
+    alignSelf: "center",
+    backgroundColor: "#3b82f6",
     borderRadius: 8,
-    marginTop: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10
+    marginVertical: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12
   },
   permissionText: {
-    color: "#07131a",
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: 0
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600"
   },
   pressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.98 }]
-  },
-  road: {
-    alignSelf: "center",
-    backgroundColor: "#1f2937",
-    borderLeftColor: "rgba(255,255,255,0.34)",
-    borderLeftWidth: 2,
-    borderRightColor: "rgba(255,255,255,0.34)",
-    borderRightWidth: 2,
-    bottom: 0,
-    height: "72%",
-    position: "absolute",
-    transform: [{ perspective: 220 }, { rotateX: "16deg" }],
-    width: "62%"
-  },
-  root: {
-    backgroundColor: "#020617",
-    flex: 1
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingTop: 8
-  },
-  scanShade: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    backgroundColor: "rgba(0,0,0,0.24)"
+    opacity: 0.7
   },
   spacer: {
     flex: 1
   },
-  subtitle: {
-    color: "rgba(255,255,255,0.66)",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0,
-    marginTop: 2,
-    textTransform: "uppercase"
-  },
-  topBar: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12
-  },
-  tuningPill: {
+  controls: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderColor: "rgba(255,255,255,0.1)",
+    gap: 12,
+    paddingBottom: 16,
+    paddingHorizontal: 16
+  },
+  primaryButton: {
+    alignItems: "center",
+    backgroundColor: "#10b981",
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    minHeight: 48,
+    paddingHorizontal: 20,
+    width: "100%"
+  },
+  stopButton: {
+    backgroundColor: "#ef4444"
+  },
+  primaryText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600"
+  },
+  primaryTextDark: {
+    color: "#031018"
+  },
+  secondaryButton: {
+    alignItems: "center",
+    backgroundColor: "#4b5563",
     borderRadius: 8,
-    borderWidth: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    width: "100%"
+  },
+  secondaryText: {
+    color: "#e2e8f0",
+    fontSize: 14,
+    fontWeight: "500"
+  },
+  scanShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.15)",
+    pointerEvents: "none"
+  },
+  fallback: {
+    backgroundColor: "#334155",
     flex: 1,
-    height: 34,
     justifyContent: "center"
   },
-  tuningPillActive: {
-    backgroundColor: "rgba(103,232,249,0.18)",
-    borderColor: "#67e8f9"
+  horizon: {
+    backgroundColor: "#64748b",
+    flex: 0.5
   },
-  tuningRow: {
-    flexDirection: "row",
-    gap: 8
+  road: {
+    alignItems: "center",
+    flex: 0.5,
+    justifyContent: "center"
   },
-  tuningText: {
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: 0
-  },
-  tuningTextActive: {
-    color: "#cffafe"
+  centerLine: {
+    backgroundColor: "#fbbf24",
+    height: 3,
+    width: "100%"
   }
 });
+
