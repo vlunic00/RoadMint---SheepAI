@@ -18,6 +18,7 @@ import { detectGroundPlane } from "./src/services/groundPlaneDetector";
 export default function App() {
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [isScanning, setIsScanning] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [clipUri, setClipUri] = useState<string>();
   const [overlaySize, setOverlaySize] = useState({ width: 1, height: 1 });
@@ -31,18 +32,20 @@ export default function App() {
   };
 
   const startScan = async () => {
-    if (isRecording) {
+    if (isScanning) {
       cameraRef.current?.stopRecording();
+      setIsScanning(false);
       setIsRecording(false);
       return;
     }
 
     setClipUri(undefined);
     setScanStartedAt(Date.now());
-    setIsRecording(true);
+    setIsScanning(true);
 
     if (hasCameraPermission && Platform.OS !== "web") {
       try {
+        setIsRecording(true);
         const recording = await cameraRef.current?.recordAsync({
           maxDuration: 900
         });
@@ -59,10 +62,11 @@ export default function App() {
   };
 
   const resetScan = () => {
-    if (isRecording) {
+    if (isScanning || isRecording) {
       cameraRef.current?.stopRecording();
     }
 
+    setIsScanning(false);
     setIsRecording(false);
     setClipUri(undefined);
     setScanStartedAt(undefined);
@@ -77,21 +81,21 @@ export default function App() {
       setGroundPlane(
         detectGroundPlane({
           elapsedMs: scanStartedAt ? Date.now() - scanStartedAt : 0,
-          isScanning: isRecording
+          isScanning
         })
       );
     };
 
     updateGroundPlane();
 
-    if (!isRecording) {
+    if (!isScanning) {
       return;
     }
 
     const interval = setInterval(updateGroundPlane, 90);
 
     return () => clearInterval(interval);
-  }, [isRecording, scanStartedAt]);
+  }, [isScanning, scanStartedAt]);
 
   return (
     <View style={styles.root}>
@@ -113,7 +117,7 @@ export default function App() {
         <View style={styles.scanShade} />
         <AROverlay
           groundPlane={groundPlane}
-          isActive={isRecording}
+          isActive={isScanning}
           onLayout={onOverlayLayout}
           height={overlaySize.height}
           width={overlaySize.width}
@@ -123,9 +127,9 @@ export default function App() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
           <Text style={styles.brand}>SheepAI Terrain Mesh</Text>
-          <View style={[styles.liveBadge, isRecording && styles.liveBadgeActive]}>
-            <View style={[styles.liveDot, isRecording && styles.liveDotActive]} />
-            <Text style={styles.liveText}>{isRecording ? "REC" : "IDLE"}</Text>
+          <View style={[styles.liveBadge, isScanning && styles.liveBadgeActive]}>
+            <View style={[styles.liveDot, isScanning && styles.liveDotActive]} />
+            <Text style={styles.liveText}>{isRecording ? "REC" : isScanning ? "SCAN" : "IDLE"}</Text>
           </View>
         </View>
 
@@ -139,17 +143,17 @@ export default function App() {
 
         <View style={styles.controls}>
           <Pressable
-            accessibilityLabel={isRecording ? "Stop recording" : "Start recording"}
+            accessibilityLabel={isScanning ? "Stop scan" : "Start scan"}
             onPress={startScan}
             style={({ pressed }) => [
               styles.primaryButton,
-              isRecording && styles.stopButton,
+              isScanning && styles.stopButton,
               pressed && styles.pressed
             ]}
           >
-            {isRecording ? <CircleStop color="#ffffff" size={24} /> : <Play color="#031018" fill="#031018" size={24} />}
-            <Text style={[styles.primaryText, !isRecording && styles.primaryTextDark]}>
-              {isRecording ? "Stop" : "Scan"}
+            {isScanning ? <CircleStop color="#ffffff" size={24} /> : <Play color="#031018" fill="#031018" size={24} />}
+            <Text style={[styles.primaryText, !isScanning && styles.primaryTextDark]}>
+              {isScanning ? "Stop" : "Scan"}
             </Text>
           </Pressable>
 

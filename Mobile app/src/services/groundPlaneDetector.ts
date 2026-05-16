@@ -7,6 +7,8 @@ type DetectorInput = {
 
 const clamp = (value: number, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
+const groundLockThreshold = 0.58 * 0.9;
+
 const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
 
 const easeOut = (value: number) => 1 - Math.pow(1 - clamp(value), 3);
@@ -25,8 +27,9 @@ export const detectGroundPlane = ({ elapsedMs, isScanning }: DetectorInput): Gro
   const settle = isScanning ? Math.sin(time * 1.8) * 0.012 * (1 - lockProgress * 0.65) : 0;
   const sway = isScanning ? Math.sin(time * 0.85) * 0.018 : 0;
   const confidence = isScanning ? clamp(0.18 + lockProgress * 0.78 + Math.sin(time * 2.1) * 0.025) : 0;
+  const meshConfidence = isScanning ? Math.max(confidence, 0.48) : 0;
   const horizonY = clamp(0.34 + settle + Math.cos(time * 0.72) * 0.012, 0.28, 0.42);
-  const isGrounded = confidence > 0.58;
+  const isGrounded = confidence > groundLockThreshold;
   const status = !isScanning ? "idle" : isGrounded ? "locked" : "acquiring";
   const mesh: GroundMeshLine[] = [];
   const rowCount = 9;
@@ -43,8 +46,8 @@ export const detectGroundPlane = ({ elapsedMs, isScanning }: DetectorInput): Gro
       id: `row-${index}`,
       p1: { x: leftX, y },
       p2: { x: rightX, y },
-      opacity: lerp(0.18, 0.72, rowProgress) * confidence,
-      strokeWidth: lerp(0.9, 1.9, rowProgress)
+      opacity: lerp(0.34, 0.86, rowProgress) * meshConfidence,
+      strokeWidth: lerp(1.2, 2.25, rowProgress)
     });
   }
 
@@ -57,8 +60,8 @@ export const detectGroundPlane = ({ elapsedMs, isScanning }: DetectorInput): Gro
       id: `column-${index}`,
       p1: { x: topX, y: horizonY },
       p2: { x: bottomX, y: 1.04 },
-      opacity: lerp(0.28, 0.48, Math.abs(columnProgress - 0.5) * 2) * confidence,
-      strokeWidth: columnProgress === 0.5 ? 1.8 : 1.2
+      opacity: lerp(0.4, 0.62, Math.abs(columnProgress - 0.5) * 2) * meshConfidence,
+      strokeWidth: columnProgress === 0.5 ? 2.2 : 1.55
     });
   }
 
