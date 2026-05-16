@@ -49,6 +49,7 @@ export default function LiveFeedPanel({
       className={`
         absolute right-0 top-0 h-full w-[320px] border-l border-orange-500/30 bg-black shadow-2xl
         z-40 transform transition-transform duration-300 ease-in-out
+        live-feed-panel
         ${open ? "translate-x-0" : "translate-x-full"}
       `}
     >

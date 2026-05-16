@@ -18,16 +18,16 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className="bg-black text-white overflow-x-hidden">
+      <body className="bg-black text-white overflow-x-hidden min-h-screen">
         <Header
           onLiveToggle={toggleLive}
           onLiveClose={closeLive}
         />
 
         <LiveOpenProvider value={{ liveOpen }}>
-          <div className="relative w-full">
+          <div className="relative flex w-full min-w-0 min-h-[calc(100vh-56px)] live-resize-boundary">
             <div
-              className={`transition-all duration-300 ease-in-out ${
+              className={`min-w-0 transition-[width] duration-300 ease-in-out ${
                 liveOpen
                   ? "md:w-[calc(100%-320px)] w-full"
                   : "w-full"

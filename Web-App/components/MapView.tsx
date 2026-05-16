@@ -314,18 +314,26 @@ export default function MapView() {
   }, [])
 
   // ============================================
-  // RESIZE MAP WHEN LIVE PANEL CHANGES
+  // MAP OPEN STATE CLASS FOR PANEL OVERLAY
+  const mapContainerClass = liveOpen ? 'live-panel-open' : ''
+
   useEffect(() => {
     if (!map.current) return
 
-    const resizeMap = () => {
-      map.current?.resize()
+    const container = map.current.getContainer()
+    const control = container.querySelector('.mapboxgl-ctrl-bottom-right') as HTMLElement | null
+    const panel = document.querySelector('.live-feed-panel') as HTMLElement | null
+
+    if (!control) return
+
+    control.style.setProperty('right', '12px', 'important')
+
+    if (liveOpen && panel) {
+      const panelWidth = Math.round(panel.getBoundingClientRect().width)
+      control.style.setProperty('transform', 'important')
+    } else {
+      control.style.removeProperty('transform')
     }
-
-    window.requestAnimationFrame(resizeMap)
-    const timeout = window.setTimeout(resizeMap, 250)
-
-    return () => window.clearTimeout(timeout)
   }, [liveOpen])
 
   // ============================================
@@ -510,7 +518,7 @@ export default function MapView() {
   }, [events, selectedCategory])
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
+    <div className={`relative h-full w-full overflow-hidden bg-black ${mapContainerClass}`}>
       {/* ============================================ */}
       {/* GLOBAL STYLES */}
       {/* ============================================ */}
@@ -595,6 +603,13 @@ export default function MapView() {
         .mapboxgl-ctrl-bottom-right {
           bottom: 70px;
           right: 12px;
+          transition: right 300ms ease-in-out, bottom 300ms ease-in-out;
+        }
+
+        @media (max-width: 767px) {
+          .live-panel-open .mapboxgl-ctrl-bottom-right {
+            right: 12px !important;
+          }
         }
       `}</style>
 
@@ -612,7 +627,7 @@ export default function MapView() {
       {/* ============================================ */}
 
       {ACTIVE_VIEW.grid && (
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_35%)]">
+        <div className={`pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_35%)] ${mapContainerClass}`}>
           <div
             className="absolute inset-0 opacity-[0.04]"
             style={{
