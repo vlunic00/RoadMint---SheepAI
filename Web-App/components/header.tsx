@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function Header({
   onLiveToggle,
@@ -32,10 +33,10 @@ export default function Header({
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
 
         {/* LEFT */}
-        <div className="text-xl font-bold">
+        <Link href="/" className="text-xl font-bold">
           <span className="text-white">Road</span>
           <span className="text-orange-500">Mint</span>
-        </div>
+        </Link>
 
         {/* CENTER NAV (desktop) */}
         <nav className="hidden md:flex gap-8 text-sm">
@@ -54,9 +55,12 @@ export default function Header({
             Live Feed
           </button>
 
-          <button className="px-4 py-2 text-sm bg-orange-500 text-black rounded-lg">
+          <Link
+            href="/login"
+            className="px-4 py-2 text-sm bg-orange-500 text-black rounded-lg"
+          >
             Sign In
-          </button>
+          </Link>
         </div>
 
         {/* MOBILE */}
@@ -88,9 +92,12 @@ export default function Header({
               Live Feed
             </button>
 
-            <button className="w-full max-w-xs px-3 py-1.5 text-sm bg-orange-500 text-black rounded-lg">
+            <Link
+              href="/login"
+              className="w-full max-w-xs px-3 py-1.5 text-sm bg-orange-500 text-black rounded-lg text-center"
+            >
               Sign In
-            </button>
+            </Link>
 
           </div>
         </div>

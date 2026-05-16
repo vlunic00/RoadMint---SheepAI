@@ -12,7 +12,7 @@ export default function LoginPage() {
 
   function validateEmail() {
     const ok = EMAIL_RE.test(email);
-    setEmailError(ok || email === "" ? "" : "Enter a valid email address");
+    setEmailError(ok || email === "" ? "" : "Unesite ispravnu email adresu");
     return ok;
   }
 
@@ -20,19 +20,19 @@ export default function LoginPage() {
     <main className="auth">
       <div className="auth-box">
         <nav className="auth-tabs">
-          <Link href="/login" className="auth-tab active">Sign in</Link>
-          <Link href="/register" className="auth-tab">Create account</Link>
+          <Link href="/login" className="auth-tab active">Prijava</Link>
+          <Link href="/register" className="auth-tab">Registracija</Link>
         </nav>
 
         <div className="field">
           <div className="field-head">
-            <span className="label">Email address</span>
+            <span className="label">Email adresa</span>
           </div>
           <label className={emailError ? "input input-error" : "input"}>
             <Mail />
             <input
               type="email"
-              placeholder="you@split.hr"
+              placeholder="vi@split.hr"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onBlur={validateEmail}
@@ -43,8 +43,8 @@ export default function LoginPage() {
 
         <div className="field">
           <div className="field-head">
-            <span className="label">Password</span>
-            <a href="#" className="label link">Forgot?</a>
+            <span className="label">Lozinka</span>
+            <a href="#" className="label link">Zaboravljena?</a>
           </div>
           <label className="input">
             <Lock />
@@ -55,17 +55,17 @@ export default function LoginPage() {
           </label>
         </div>
 
-        <button type="button" className="btn" onClick={validateEmail}>Sign in <Arrow /></button>
+        <button type="button" className="btn" onClick={validateEmail}>Prijava <Arrow /></button>
 
-        <div className="divider">or</div>
+        <div className="divider">ili</div>
 
-        <button type="button" className="btn-ghost"><Google /> Continue with Google</button>
+        <button type="button" className="btn-ghost"><Google /> Nastavi s Googleom</button>
 
         <p className="auth-alt">
-          Don&apos;t have an account? <Link href="/register" className="link">Create one</Link>
+          Nemate račun? <Link href="/register" className="link">Registrirajte se</Link>
         </p>
 
-        <p className="auth-foot">Official platform of Grad Split — Road Maintenance Division</p>
+        <p className="auth-foot">Službena platforma Grada Splita, Odjel za održavanje cesta</p>
       </div>
     </main>
   );

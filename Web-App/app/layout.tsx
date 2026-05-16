@@ -18,11 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-black text-white overflow-x-hidden">
-
-        <Header
-          onLiveToggle={toggleLive}
-          onLiveClose={closeLive}
-        />
+        <Header onLiveToggle={toggleLive} onLiveClose={closeLive} />
 
         <div
           className={`
@@ -33,10 +29,7 @@ export default function RootLayout({
           {children}
         </div>
 
-        <LiveFeedPanel
-          open={liveOpen}
-          onClose={closeLive}
-        />
+        <LiveFeedPanel open={liveOpen} onClose={closeLive} />
       </body>
     </html>
   );
