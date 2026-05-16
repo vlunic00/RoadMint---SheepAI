@@ -2,8 +2,8 @@
   {
     "id": "evt_001",
     "geolocation": {
-      "latitude": 40.7128,
-      "longitude": -74.0060
+      "latitude": 43.5085,
+      "longitude": 16.4410
     },
     "macAddress": "00:1A:2B:3C:4D:5E",
     "category": "pothole",
@@ -13,8 +13,8 @@
   {
     "id": "evt_002",
     "geolocation": {
-      "latitude": 40.7489,
-      "longitude": -73.9680
+      "latitude": 43.5100,
+      "longitude": 16.4370
     },
     "macAddress": "AA:BB:CC:DD:EE:FF",
     "category": "crack",
@@ -24,8 +24,8 @@
   {
     "id": "evt_003",
     "geolocation": {
-      "latitude": 40.7614,
-      "longitude": -73.9776
+      "latitude": 43.5068,
+      "longitude": 16.4442
     },
     "macAddress": "11:22:33:44:55:66",
     "category": "debris",
