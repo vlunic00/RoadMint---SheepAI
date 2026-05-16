@@ -307,6 +307,22 @@ body {
   background: #e8843c;
 }
 
+.hero {
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(#0c0c0ccc, #0c0c0ccc),
+    url("/hero-map.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-col {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+}
+
 .hero-title {
   margin: 0;
   font-size: clamp(40px, 5vw, 84px);
