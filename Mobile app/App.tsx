@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { StatusBar } from "expo-status-bar";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -13,6 +13,7 @@ import {
 import { CircleStop, Play } from "lucide-react-native";
 
 import { AROverlay } from "./src/components/AROverlay";
+import { detectGroundPlane } from "./src/services/groundPlaneDetector";
 
 export default function App() {
   const cameraRef = useRef<CameraView | null>(null);
@@ -20,6 +21,8 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [clipUri, setClipUri] = useState<string>();
   const [overlaySize, setOverlaySize] = useState({ width: 1, height: 1 });
+  const [scanStartedAt, setScanStartedAt] = useState<number>();
+  const [groundPlane, setGroundPlane] = useState(() => detectGroundPlane({ elapsedMs: 0, isScanning: false }));
   const hasCameraPermission = permission?.granted;
 
   const onOverlayLayout = (event: LayoutChangeEvent) => {
@@ -35,6 +38,7 @@ export default function App() {
     }
 
     setClipUri(undefined);
+    setScanStartedAt(Date.now());
     setIsRecording(true);
 
     if (hasCameraPermission && Platform.OS !== "web") {
@@ -61,11 +65,33 @@ export default function App() {
 
     setIsRecording(false);
     setClipUri(undefined);
+    setScanStartedAt(undefined);
   };
 
   const requestCamera = async () => {
     await requestPermission();
   };
+
+  useEffect(() => {
+    const updateGroundPlane = () => {
+      setGroundPlane(
+        detectGroundPlane({
+          elapsedMs: scanStartedAt ? Date.now() - scanStartedAt : 0,
+          isScanning: isRecording
+        })
+      );
+    };
+
+    updateGroundPlane();
+
+    if (!isRecording) {
+      return;
+    }
+
+    const interval = setInterval(updateGroundPlane, 90);
+
+    return () => clearInterval(interval);
+  }, [isRecording, scanStartedAt]);
 
   return (
     <View style={styles.root}>
@@ -86,6 +112,7 @@ export default function App() {
         )}
         <View style={styles.scanShade} />
         <AROverlay
+          groundPlane={groundPlane}
           isActive={isRecording}
           onLayout={onOverlayLayout}
           height={overlaySize.height}
@@ -287,4 +314,3 @@ const styles = StyleSheet.create({
     width: "100%"
   }
 });
-
