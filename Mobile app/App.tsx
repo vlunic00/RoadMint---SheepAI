@@ -1,4 +1,3 @@
-import { CameraView, useCameraPermissions } from "expo-camera";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -7,63 +6,74 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  View,
-  type LayoutChangeEvent
+  View
 } from "react-native";
-import { CircleStop, Play } from "lucide-react-native";
+import { ViroARSceneNavigator } from "@reactvision/react-viro";
 
-import { AROverlay } from "./src/components/AROverlay";
-import { detectGroundPlane } from "./src/services/groundPlaneDetector";
+import { ViroTerrainScene } from "./src/components/ViroTerrainScene";
+import type { ARMeshStatus } from "./src/types/ar";
 
 export default function App() {
-  const cameraRef = useRef<CameraView | null>(null);
-  const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [clipUri, setClipUri] = useState<string>();
-  const [overlaySize, setOverlaySize] = useState({ width: 1, height: 1 });
   const [scanStartedAt, setScanStartedAt] = useState<number>();
-  const [groundPlane, setGroundPlane] = useState(() => detectGroundPlane({ elapsedMs: 0, isScanning: false }));
-  const hasCameraPermission = permission?.granted;
-
-  const onOverlayLayout = (event: LayoutChangeEvent) => {
-    const { height, width } = event.nativeEvent.layout;
-    setOverlaySize({ height: Math.max(1, height), width: Math.max(1, width) });
-  };
+  const [meshStatus, setMeshStatus] = useState<ARMeshStatus>({
+    confidence: 0,
+    isGrounded: false,
+    planeCount: 0,
+    status: "idle"
+  });
+  const recordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startScan = async () => {
     if (isScanning) {
-      cameraRef.current?.stopRecording();
       setIsScanning(false);
       setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
       return;
     }
 
     setClipUri(undefined);
     setScanStartedAt(Date.now());
     setIsScanning(true);
+    setIsRecording(true);
 
-    if (hasCameraPermission && Platform.OS !== "web") {
-      try {
-        setIsRecording(true);
-        const recording = await cameraRef.current?.recordAsync({
-          maxDuration: 900
-        });
-
-        if (recording?.uri) {
-          setClipUri(recording.uri);
-        }
-      } catch (error) {
-        console.warn("Recording failed", error);
-      } finally {
-        setIsRecording(false);
-      }
-    }
+    recordingTimerRef.current = setTimeout(() => {
+      setClipUri(`mock-viro-ar-scan-${Date.now()}.mp4`);
+      setIsRecording(false);
+    }, 900);
   };
 
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isScanning) {
+      return;
+    }
+
+    setMeshStatus((current) => ({
+      ...current,
+      confidence: 0,
+      isGrounded: false,
+      status: "idle"
+    }));
+  }, [isScanning]);
+
   const resetScan = () => {
-    if (isScanning || isRecording) {
-      cameraRef.current?.stopRecording();
+    if (recordingTimerRef.current) {
+      clearTimeout(recordingTimerRef.current);
+      recordingTimerRef.current = null;
     }
 
     setIsScanning(false);
@@ -72,56 +82,46 @@ export default function App() {
     setScanStartedAt(undefined);
   };
 
-  const requestCamera = async () => {
-    await requestPermission();
-  };
+  const arScene = Platform.OS === "web" ? (
+    <RoadFallback />
+  ) : (
+    <ViroARSceneNavigator
+      autofocus
+      depthEnabled
+      initialScene={{
+        scene: ViroTerrainScene as () => React.JSX.Element
+      }}
+      provider="none"
+      viroAppProps={{
+        isScanning,
+        onMeshStatusChange: setMeshStatus
+      }}
+      worldAlignment="Gravity"
+    />
+  );
 
   useEffect(() => {
-    const updateGroundPlane = () => {
-      setGroundPlane(
-        detectGroundPlane({
-          elapsedMs: scanStartedAt ? Date.now() - scanStartedAt : 0,
-          isScanning
-        })
-      );
-    };
-
-    updateGroundPlane();
-
     if (!isScanning) {
       return;
     }
 
-    const interval = setInterval(updateGroundPlane, 90);
+    const interval = setInterval(() => {
+      if (scanStartedAt && Date.now() - scanStartedAt > 900) {
+        setIsRecording(false);
+      }
+    }, 250);
 
     return () => clearInterval(interval);
   }, [isScanning, scanStartedAt]);
+
+  const confidence = Math.round(meshStatus.confidence * 100);
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
       <View style={styles.cameraLayer}>
-        {hasCameraPermission ? (
-          <CameraView
-            active
-            facing="back"
-            mode="video"
-            mute
-            ref={cameraRef}
-            style={StyleSheet.absoluteFill}
-            videoStabilizationMode="auto"
-          />
-        ) : (
-          <View style={styles.fallback} />
-        )}
+        {arScene}
         <View style={styles.scanShade} />
-        <AROverlay
-          groundPlane={groundPlane}
-          isActive={isScanning}
-          onLayout={onOverlayLayout}
-          height={overlaySize.height}
-          width={overlaySize.width}
-        />
       </View>
 
       <SafeAreaView style={styles.safeArea}>
@@ -133,10 +133,13 @@ export default function App() {
           </View>
         </View>
 
-        {!hasCameraPermission && (
-          <Pressable onPress={requestCamera} style={({ pressed }) => [styles.permissionButton, pressed && styles.pressed]}>
-            <Text style={styles.permissionText}>Enable camera</Text>
-          </Pressable>
+        {isScanning && (
+          <View style={styles.meshStatus}>
+            <View style={[styles.meshStatusDot, meshStatus.isGrounded && styles.meshStatusDotLocked]} />
+            <Text style={styles.meshStatusText}>
+              {meshStatus.status.toUpperCase()} {confidence}% · {meshStatus.planeCount} planes
+            </Text>
+          </View>
         )}
 
         <View style={styles.spacer} />
@@ -151,7 +154,6 @@ export default function App() {
               pressed && styles.pressed
             ]}
           >
-            {isScanning ? <CircleStop color="#ffffff" size={24} /> : <Play color="#031018" fill="#031018" size={24} />}
             <Text style={[styles.primaryText, !isScanning && styles.primaryTextDark]}>
               {isScanning ? "Stop" : "Scan"}
             </Text>
@@ -297,6 +299,33 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.15)",
     pointerEvents: "none"
+  },
+  meshStatus: {
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "rgba(3, 9, 14, 0.76)",
+    borderColor: "rgba(255,255,255,0.16)",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7
+  },
+  meshStatusDot: {
+    backgroundColor: "#fbbf24",
+    borderRadius: 4,
+    height: 8,
+    width: 8
+  },
+  meshStatusDotLocked: {
+    backgroundColor: "#12ffbe"
+  },
+  meshStatusText: {
+    color: "#e2e8f0",
+    fontSize: 12,
+    fontWeight: "800"
   },
   fallback: {
     backgroundColor: "#334155",

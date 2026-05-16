@@ -10,11 +10,24 @@
     "newArchEnabled": true,
     "plugins": [
       [
-        "expo-camera",
+        "@reactvision/react-viro",
         {
-          "cameraPermission": "Allow SheepAI to scan the road surface for potholes and pavement damage.",
-          "microphonePermission": "Allow SheepAI to record road assessment clips.",
-          "recordAudioAndroid": false
+          "provider": "none",
+          "android": {
+            "xRMode": [
+              "AR"
+            ]
+          },
+          "ios": {
+            "cameraUsagePermission": "Allow SheepAI to scan the road surface for potholes and pavement damage.",
+            "microphoneUsagePermission": "Allow SheepAI to record road assessment clips."
+          }
+        }
+      ],
+      [
+        "expo-dev-client",
+        {
+          "launchMode": "most-recent"
         }
       ]
     ],
