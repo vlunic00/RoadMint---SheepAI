@@ -11,11 +11,23 @@ interface EventData {
     longitude: number
   }
   macAddress: string
-  category: 'pothole' | 'crack' | 'debris' | 'flooding'
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  category:
+    | 'pothole'
+    | 'crack'
+    | 'debris'
+    | 'flooding'
+
+  priority:
+    | 'very-low'
+    | 'low'
+    | 'medium'
+    | 'high'
+    | 'critical'
+
   timestamp: string
 }
 
+// CATEGORY COLORS (filter buttons only)
 const categoryColors: Record<string, string> = {
   pothole: '#FF6B6B',
   crack: '#FFA500',
@@ -23,14 +35,16 @@ const categoryColors: Record<string, string> = {
   flooding: '#4ECDC4',
 }
 
-const prioritySize: Record<string, number> = {
-  low: 8,
-  medium: 12,
-  high: 16,
-  critical: 20,
+// PRIORITY COLORS (actual map markers)
+const priorityColors: Record<string, string> = {
+  'very-low': '#22c55e', // green
+  low: '#84cc16', // lime
+  medium: '#eab308', // yellow
+  high: '#f97316', // orange
+  critical: '#ef4444', // red
 }
 
-// Split, Croatia
+// Split
 const SPLIT_CENTER: [number, number] = [16.4402, 43.5081]
 
 export default function MapView() {
@@ -47,11 +61,16 @@ export default function MapView() {
     const loadEvents = async () => {
       try {
         const response = await fetch('/data/events.json')
-        const data: EventData[] = await response.json()
+
+        const data: EventData[] =
+          await response.json()
 
         setEvents(data)
       } catch (error) {
-        console.error('Failed to load events:', error)
+        console.error(
+          'Failed to load events:',
+          error
+        )
       }
     }
 
@@ -70,16 +89,18 @@ export default function MapView() {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
       center: SPLIT_CENTER,
-      zoom: 12.3,
+      zoom: 13.1,
       antialias: true,
     })
 
-    map.current.addControl(
-      new mapboxgl.NavigationControl({
-        showCompass: false,
-      }),
-      'top-right'
-    )
+    // FIXED ZOOM CONTROLS
+    const nav = new mapboxgl.NavigationControl({
+      visualizePitch: false,
+      showCompass: false,
+      showZoom: true,
+    })
+
+    map.current.addControl(nav, 'bottom-right')
 
     return () => {
       markersRef.current.forEach((marker) =>
@@ -105,7 +126,7 @@ export default function MapView() {
 
     markersRef.current = []
 
-    // Filter events
+    // Filter
     const filteredEvents =
       selectedCategory === 'all'
         ? events
@@ -118,37 +139,40 @@ export default function MapView() {
       const wrapper = document.createElement('div')
       const dot = document.createElement('div')
 
-      const size = prioritySize[event.priority]
-      const color = categoryColors[event.category]
+      const color =
+        priorityColors[event.priority]
 
       wrapper.style.cursor = 'pointer'
       wrapper.style.display = 'flex'
       wrapper.style.alignItems = 'center'
       wrapper.style.justifyContent = 'center'
 
-      dot.style.width = `${size}px`
-      dot.style.height = `${size}px`
+      // FIXED SIZE
+      dot.style.width = `14px`
+      dot.style.height = `14px`
+
       dot.style.backgroundColor = color
       dot.style.borderRadius = '999px'
+
       dot.style.border =
         '2px solid rgba(255,255,255,0.35)'
-      dot.style.boxShadow = `0 0 ${size}px ${color}80`
+
+      dot.style.boxShadow = `0 0 18px ${color}90`
+
       dot.style.transition = 'all 0.2s ease'
 
       wrapper.appendChild(dot)
 
-      // Hover effect
+      // Hover
       wrapper.addEventListener('mouseenter', () => {
-        dot.style.boxShadow = `0 0 ${
-          size + 10
-        }px ${color}`
+        dot.style.boxShadow = `0 0 28px ${color}`
 
         dot.style.border =
           '2px solid rgba(255,255,255,0.8)'
       })
 
       wrapper.addEventListener('mouseleave', () => {
-        dot.style.boxShadow = `0 0 ${size}px ${color}80`
+        dot.style.boxShadow = `0 0 18px ${color}90`
 
         dot.style.border =
           '2px solid rgba(255,255,255,0.35)'
@@ -156,7 +180,7 @@ export default function MapView() {
 
       // Popup
       const popup = new mapboxgl.Popup({
-        offset: 20,
+        offset: 18,
         closeButton: true,
       }).setHTML(`
         <div style="
@@ -176,10 +200,18 @@ export default function MapView() {
             ${event.category}
           </div>
 
-          <div style="font-size:12px;line-height:1.7;">
+          <div style="
+            font-size:12px;
+            line-height:1.7;
+          ">
             <div>
               <strong>ID:</strong>
               ${event.id}
+            </div>
+
+            <div>
+              <strong>Category:</strong>
+              ${event.category}
             </div>
 
             <div>
@@ -188,7 +220,7 @@ export default function MapView() {
             </div>
 
             <div>
-              <strong>MAC Address:</strong>
+              <strong>MAC:</strong>
               ${event.macAddress}
             </div>
 
@@ -229,14 +261,16 @@ export default function MapView() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-black">
-      {/* POPUP STYLES */}
+      {/* GLOBAL STYLES */}
       <style jsx global>{`
         .mapboxgl-popup-content {
           background: #111 !important;
           color: white !important;
-          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border: 1px solid
+            rgba(255, 255, 255, 0.08) !important;
           border-radius: 14px !important;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45) !important;
+          box-shadow: 0 10px 40px
+            rgba(0, 0, 0, 0.45) !important;
           padding: 12px !important;
         }
 
@@ -255,6 +289,29 @@ export default function MapView() {
           background: transparent !important;
           color: white;
         }
+
+        /* FIX MAPBOX CONTROLS */
+        .mapboxgl-ctrl-group {
+          background: rgba(10, 10, 10, 0.9) !important;
+          border: 1px solid
+            rgba(255, 255, 255, 0.08) !important;
+          overflow: hidden;
+          border-radius: 12px !important;
+          backdrop-filter: blur(10px);
+        }
+
+        .mapboxgl-ctrl-group button {
+          background: transparent !important;
+        }
+
+        .mapboxgl-ctrl-group button span {
+          filter: invert(1);
+        }
+
+        .mapboxgl-ctrl-bottom-right {
+          bottom: 70px;
+          right: 12px;
+        }
       `}</style>
 
       {/* MAP */}
@@ -266,28 +323,7 @@ export default function MapView() {
       {/* OVERLAY */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_35%)]" />
 
-      {/* TOP BAR */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex h-14 items-center justify-between border-b border-white/10 bg-black/70 px-4 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-orange-500 font-black text-black">
-            ◎
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold uppercase tracking-wider text-white">
-              FixCity
-            </span>
-
-            <span className="text-xs uppercase tracking-[0.2em] text-gray-500">
-              Live Monitoring
-            </span>
-          </div>
-        </div>
-
-        <div className="text-[10px] uppercase tracking-[0.25em] text-gray-500">
-          Split · Croatia
-        </div>
-      </div>
+      {/* Top bar removed per request */}
 
       {/* FILTERS */}
       <div className="absolute top-16 right-3 z-20 flex flex-wrap gap-2">
@@ -302,90 +338,56 @@ export default function MapView() {
           All
         </button>
 
-        {Object.keys(categoryColors).map((category) => (
-          <button
-            key={category}
-            onClick={() =>
-              setSelectedCategory(category)
-            }
-            className={`rounded border px-3 py-1 text-xs uppercase tracking-wider transition ${
-              selectedCategory === category
-                ? 'border-orange-500 bg-orange-500 text-black'
-                : 'border-white/10 bg-black/70 text-gray-400'
-            }`}
-          >
-            {category}
-          </button>
-        ))}
+        {Object.keys(categoryColors).map(
+          (category) => (
+            <button
+              key={category}
+              onClick={() =>
+                setSelectedCategory(category)
+              }
+              className={`rounded border px-3 py-1 text-xs uppercase tracking-wider transition ${
+                selectedCategory === category
+                  ? 'border-orange-500 bg-orange-500 text-black'
+                  : 'border-white/10 bg-black/70 text-gray-400'
+              }`}
+            >
+              {category}
+            </button>
+          )
+        )}
       </div>
 
       {/* LEGEND */}
-      <div className="absolute top-16 left-3 z-20 w-44 rounded border border-white/10 bg-black/80 p-3 backdrop-blur-md">
+      <div className="absolute top-16 left-3 z-20 w-52 rounded border border-white/10 bg-black/80 p-3 backdrop-blur-md">
         <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
-          Legend
+          Priority Levels
         </div>
 
-        {/* Categories */}
-        <div className="mb-4">
-          <div className="mb-2 text-xs font-semibold text-gray-300">
-            Categories
-          </div>
-
-          <div className="space-y-2">
-            {Object.entries(categoryColors).map(
-              ([category, color]) => (
+        <div className="space-y-2">
+          {Object.entries(priorityColors).map(
+            ([priority, color]) => (
+              <div
+                key={priority}
+                className="flex items-center gap-2"
+              >
                 <div
-                  key={category}
-                  className="flex items-center gap-2"
-                >
-                  <div
-                    className="h-2 w-2 rounded-full"
-                    style={{
-                      backgroundColor: color,
-                    }}
-                  />
+                  className="h-3 w-3 rounded-full"
+                  style={{
+                    backgroundColor: color,
+                    boxShadow: `0 0 12px ${color}`,
+                  }}
+                />
 
-                  <span className="text-xs capitalize text-gray-400">
-                    {category}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Priority */}
-        <div className="border-t border-white/10 pt-3">
-          <div className="mb-2 text-xs font-semibold text-gray-300">
-            Priority
-          </div>
-
-          <div className="space-y-2">
-            {Object.entries(prioritySize).map(
-              ([priority, size]) => (
-                <div
-                  key={priority}
-                  className="flex items-center gap-2"
-                >
-                  <div
-                    className="rounded-full bg-blue-400"
-                    style={{
-                      width: `${size}px`,
-                      height: `${size}px`,
-                    }}
-                  />
-
-                  <span className="text-xs capitalize text-gray-400">
-                    {priority}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
+                <span className="text-xs capitalize text-gray-300">
+                  {priority}
+                </span>
+              </div>
+            )
+          )}
         </div>
       </div>
 
-      {/* BOTTOM STATUS */}
+      {/* STATUS BAR */}
       <div className="absolute bottom-0 left-0 right-0 z-20 flex h-12 items-center justify-center border-t border-white/10 bg-black/70 text-[10px] uppercase tracking-[0.25em] text-gray-500 backdrop-blur-md">
         {selectedCategory === 'all'
           ? `${events.length} active reports loaded`

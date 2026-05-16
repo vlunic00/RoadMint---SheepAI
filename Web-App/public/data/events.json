@@ -32,26 +32,16 @@
     "priority": "medium",
     "timestamp": "2026-05-16T12:20:00Z"
   },
-    {
-
+  {
     "id": "evt_003",
-
     "geolocation": {
-
-      "latitude": 43.5061,
-
-      "longitude": 16.4446
-
+      "latitude": 43.5062,
+      "longitude": 16.4449
     },
-
     "macAddress": "11:22:33:44:55:66",
-
     "category": "flooding",
-
     "priority": "high",
-
     "timestamp": "2026-05-16T12:20:00Z"
-
   }
 
 ]
