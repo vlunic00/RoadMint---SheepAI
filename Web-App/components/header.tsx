@@ -20,10 +20,8 @@ export default function Header({
   const handleBurgerClick = () => {
     setMenuOpen((prev) => {
       const next = !prev;
-
       // close live feed when opening burger
       if (next) onLiveClose();
-
       return next;
     });
   };
@@ -32,7 +30,7 @@ export default function Header({
     <header className="w-full bg-black border-b border-white/10 shadow-md relative z-50 sticky top-0">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
 
-        {/* LEFT */}
+        {/* LOGO */}
         <Link href="/" className="text-xl font-bold">
           <span className="text-white">Road</span>
           <span className="text-orange-500">Mint</span>
@@ -57,7 +55,7 @@ export default function Header({
 
           <Link
             href="/login"
-            className="px-4 py-2 text-sm bg-orange-500 text-black rounded-lg"
+            className="px-4 py-2 text-sm bg-orange-500 text-black rounded-lg hover:bg-orange-400 transition"
           >
             Sign In
           </Link>
@@ -84,7 +82,6 @@ export default function Header({
           </nav>
 
           <div className="flex flex-col items-center gap-3">
-
             <button
               onClick={handleLiveClick}
               className="w-full max-w-xs px-3 py-1.5 text-sm border border-orange-500 text-orange-400 rounded-lg"
@@ -98,7 +95,6 @@ export default function Header({
             >
               Sign In
             </Link>
-
           </div>
         </div>
       )}
