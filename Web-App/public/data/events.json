@@ -1,0 +1,35 @@
+[
+  {
+    "id": "evt_001",
+    "geolocation": {
+      "latitude": 40.7128,
+      "longitude": -74.0060
+    },
+    "macAddress": "00:1A:2B:3C:4D:5E",
+    "category": "pothole",
+    "priority": "critical",
+    "timestamp": "2026-05-16T14:30:00Z"
+  },
+  {
+    "id": "evt_002",
+    "geolocation": {
+      "latitude": 40.7489,
+      "longitude": -73.9680
+    },
+    "macAddress": "AA:BB:CC:DD:EE:FF",
+    "category": "crack",
+    "priority": "high",
+    "timestamp": "2026-05-16T13:45:00Z"
+  },
+  {
+    "id": "evt_003",
+    "geolocation": {
+      "latitude": 40.7614,
+      "longitude": -73.9776
+    },
+    "macAddress": "11:22:33:44:55:66",
+    "category": "debris",
+    "priority": "medium",
+    "timestamp": "2026-05-16T12:20:00Z"
+  }
+]
