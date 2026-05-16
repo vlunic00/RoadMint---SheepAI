@@ -17,13 +17,16 @@ export default function Header({
     setMenuOpen(false);
   };
 
+  // FIXED
   const handleBurgerClick = () => {
-    setMenuOpen((prev) => {
-      const next = !prev;
-      // close live feed when opening burger
-      if (next) onLiveClose();
-      return next;
-    });
+    const next = !menuOpen;
+
+    // close live feed when opening burger
+    if (next) {
+      onLiveClose();
+    }
+
+    setMenuOpen(next);
   };
 
   return (
@@ -38,10 +41,21 @@ export default function Header({
 
         {/* CENTER NAV (desktop) */}
         <nav className="hidden md:flex gap-8 text-sm">
-          <Link href="/#how-it-works" className="text-gray-400 hover:text-orange-400">KAKO FUNKCIONIRA</Link>
-          <Link href="/#features" className="text-gray-400 hover:text-orange-400">ZNAČAJKE</Link>
-          <Link href="/map" className="text-gray-400 hover:text-orange-400">MAPA UŽIVO</Link>
-          <Link href="/report" className="text-gray-400 hover:text-orange-400">PRIJAVI PROBLEM</Link>
+          <Link href="/#how-it-works" className="text-gray-400 hover:text-orange-400">
+            KAKO FUNKCIONIRA
+          </Link>
+
+          <Link href="/#features" className="text-gray-400 hover:text-orange-400">
+            ZNAČAJKE
+          </Link>
+
+          <Link href="/map" className="text-gray-400 hover:text-orange-400">
+            MAPA UŽIVO
+          </Link>
+
+          <Link href="/report" className="text-gray-400 hover:text-orange-400">
+            PRIJAVI PROBLEM
+          </Link>
         </nav>
 
         {/* RIGHT (desktop buttons) */}
@@ -75,10 +89,21 @@ export default function Header({
         <div className="md:hidden px-4 pb-5 bg-black border-t border-white/10">
 
           <nav className="flex flex-col items-center gap-4 text-sm py-4">
-            <Link href="/#how-it-works" className="text-gray-400 hover:text-orange-400">KAKO FUNKCIONIRA</Link>
-            <Link href="/#features" className="text-gray-400 hover:text-orange-400">ZNAČAJKE</Link>
-            <Link href="/map" className="text-gray-400 hover:text-orange-400">MAPA UŽIVO</Link>
-            <Link href="/report" className="text-gray-400 hover:text-orange-400">PRIJAVI PROBLEM</Link>
+            <Link href="/#how-it-works" className="text-gray-400 hover:text-orange-400">
+              KAKO FUNKCIONIRA
+            </Link>
+
+            <Link href="/#features" className="text-gray-400 hover:text-orange-400">
+              ZNAČAJKE
+            </Link>
+
+            <Link href="/map" className="text-gray-400 hover:text-orange-400">
+              MAPA UŽIVO
+            </Link>
+
+            <Link href="/report" className="text-gray-400 hover:text-orange-400">
+              PRIJAVI PROBLEM
+            </Link>
           </nav>
 
           <div className="flex flex-col items-center gap-3">
