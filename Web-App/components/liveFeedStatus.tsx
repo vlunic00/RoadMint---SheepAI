@@ -47,11 +47,8 @@ export default function LiveFeedPanel({
   return (
     <div
       className={`
-        fixed top-14 h-[calc(100vh-56px)] bg-black shadow-2xl border-l border-orange-500/30
+        absolute right-0 top-0 h-full w-[320px] border-l border-orange-500/30 bg-black shadow-2xl
         z-40 transform transition-transform duration-300 ease-in-out
-
-        w-full md:w-80 md:right-0
-
         ${open ? "translate-x-0" : "translate-x-full"}
       `}
     >

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Header from "../components/header";
 import LiveFeedPanel from "../components/liveFeedStatus";
+import { LiveOpenProvider } from "../contexts/LiveOpenContext";
 import "./globals.css";
 
 export default function RootLayout({
@@ -18,18 +19,29 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-black text-white overflow-x-hidden">
-        <Header onLiveToggle={toggleLive} onLiveClose={closeLive} />
+        <Header
+          onLiveToggle={toggleLive}
+          onLiveClose={closeLive}
+        />
 
-        <div
-          className={`
-            transition-transform duration-300 ease-in-out
-            ${liveOpen ? "md:-translate-x-80" : "translate-x-0"}
-          `}
-        >
-          {children}
-        </div>
+        <LiveOpenProvider value={{ liveOpen }}>
+          <div className="relative w-full">
+            <div
+              className={`transition-all duration-300 ease-in-out ${
+                liveOpen
+                  ? "md:w-[calc(100%-320px)] w-full"
+                  : "w-full"
+              }`}
+            >
+              {children}
+            </div>
 
-        <LiveFeedPanel open={liveOpen} onClose={closeLive} />
+            <LiveFeedPanel
+              open={liveOpen}
+              onClose={closeLive}
+            />
+          </div>
+        </LiveOpenProvider>
       </body>
     </html>
   );

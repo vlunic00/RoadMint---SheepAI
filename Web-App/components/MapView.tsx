@@ -83,8 +83,8 @@ const MAP_VIEWS = {
 // CHANGE THIS ONLY
 // ============================================
 
-// const ACTIVE_VIEW = MAP_VIEWS.FLAT
-const ACTIVE_VIEW = MAP_VIEWS.CINEMATIC
+// const ACTIVE_VIEW = MAP_VIEWS.CINEMATIC
+const ACTIVE_VIEW = MAP_VIEWS.FLAT
 
 // ============================================
 // SPLIT
@@ -92,11 +92,14 @@ const ACTIVE_VIEW = MAP_VIEWS.CINEMATIC
 
 const SPLIT_CENTER: [number, number] = [
   16.4402,
-  43.5081,
+  43.5110,
 ]
+
+import { useLiveOpen } from "@/contexts/LiveOpenContext"
 
 export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null)
+  const { liveOpen } = useLiveOpen()
 
   const map = useRef<mapboxgl.Map | null>(null)
 
@@ -154,7 +157,7 @@ export default function MapView() {
       style: ACTIVE_VIEW.style,
 
       center: SPLIT_CENTER,
-      zoom: 13.1,
+      zoom: 13.2,
 
       pitch: ACTIVE_VIEW.pitch,
       bearing: ACTIVE_VIEW.bearing,
@@ -311,6 +314,21 @@ export default function MapView() {
   }, [])
 
   // ============================================
+  // RESIZE MAP WHEN LIVE PANEL CHANGES
+  useEffect(() => {
+    if (!map.current) return
+
+    const resizeMap = () => {
+      map.current?.resize()
+    }
+
+    window.requestAnimationFrame(resizeMap)
+    const timeout = window.setTimeout(resizeMap, 250)
+
+    return () => window.clearTimeout(timeout)
+  }, [liveOpen])
+
+  // ============================================
   // RENDER MARKERS
   // ============================================
 
@@ -413,21 +431,32 @@ export default function MapView() {
       // POPUP
       // ============================================
 
+      const formattedTimestamp = new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(new Date(event.timestamp))
+
       const popup = new mapboxgl.Popup({
         offset: 18,
         closeButton: true,
       }).setHTML(`
         <div style="
-          min-width:240px;
+          max-width:260px;
           background:#111;
           color:white;
           font-family:Inter,sans-serif;
-          padding:2px;
+          padding:8px;
+          box-sizing:border-box;
+          word-break:break-word;
         ">
           <div style="
             font-size:14px;
             font-weight:700;
-            margin-bottom:10px;
+            margin-bottom:8px;
             text-transform:capitalize;
             color:${color};
           ">
@@ -436,13 +465,8 @@ export default function MapView() {
 
           <div style="
             font-size:12px;
-            line-height:1.7;
+            line-height:1.6;
           ">
-            <div>
-              <strong>ID:</strong>
-              ${event.id}
-            </div>
-
             <div>
               <strong>Category:</strong>
               ${event.category}
@@ -451,11 +475,6 @@ export default function MapView() {
             <div>
               <strong>Priority:</strong>
               ${event.priority}
-            </div>
-
-            <div>
-              <strong>MAC:</strong>
-              ${event.macAddress}
             </div>
 
             <div>
@@ -469,10 +488,7 @@ export default function MapView() {
             </div>
 
             <div>
-              <strong>Timestamp:</strong>
-              ${new Date(
-                event.timestamp
-              ).toLocaleString()}
+              <strong>Timestamp:</strong>&nbsp;${formattedTimestamp}
             </div>
           </div>
         </div>
@@ -494,7 +510,7 @@ export default function MapView() {
   }, [events, selectedCategory])
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-black">
+    <div className="relative h-full w-full overflow-hidden bg-black">
       {/* ============================================ */}
       {/* GLOBAL STYLES */}
       {/* ============================================ */}

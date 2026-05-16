@@ -7,7 +7,7 @@ import CallToAction from "@/components/home/CallToAction";
 
 export default function Home() {
   return (
-    <main className="home">
+    <main className="home h-full w-full overflow-hidden">
       <Hero />
       <StatsBand />
       <HowItWorks />
