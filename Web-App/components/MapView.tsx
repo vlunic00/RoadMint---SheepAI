@@ -50,6 +50,21 @@ const priorityColors: Record<string, string> = {
   critical: '#ef4444',
 }
 
+const categoryLabels: Record<string, string> = {
+  pothole: 'Rupa',
+  crack: 'Pukotina',
+  debris: 'Otpad',
+  flooding: 'Poplava',
+}
+
+const priorityLabels: Record<string, string> = {
+  'very-low': 'Vrlo nizak',
+  low: 'Nizak',
+  medium: 'Srednji',
+  high: 'Visok',
+  critical: 'Kritičan',
+}
+
 // ============================================
 // MAP PRESETS
 // ============================================
@@ -439,7 +454,7 @@ export default function MapView() {
       // POPUP
       // ============================================
 
-      const formattedTimestamp = new Intl.DateTimeFormat(undefined, {
+      const formattedTimestamp = new Intl.DateTimeFormat('hr-HR', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -465,10 +480,9 @@ export default function MapView() {
             font-size:14px;
             font-weight:700;
             margin-bottom:8px;
-            text-transform:capitalize;
             color:${color};
           ">
-            ${event.category}
+            ${categoryLabels[event.category]}
           </div>
 
           <div style="
@@ -476,27 +490,27 @@ export default function MapView() {
             line-height:1.6;
           ">
             <div>
-              <strong>Category:</strong>
-              ${event.category}
+              <strong>Kategorija:</strong>
+              ${categoryLabels[event.category]}
             </div>
 
             <div>
-              <strong>Priority:</strong>
-              ${event.priority}
+              <strong>Prioritet:</strong>
+              ${priorityLabels[event.priority]}
             </div>
 
             <div>
-              <strong>Latitude:</strong>
+              <strong>Zem. širina:</strong>
               ${event.geolocation.latitude}
             </div>
 
             <div>
-              <strong>Longitude:</strong>
+              <strong>Zem. dužina:</strong>
               ${event.geolocation.longitude}
             </div>
 
             <div>
-              <strong>Timestamp:</strong>&nbsp;${formattedTimestamp}
+              <strong>Vrijeme:</strong>&nbsp;${formattedTimestamp}
             </div>
           </div>
         </div>
@@ -657,7 +671,7 @@ export default function MapView() {
               : 'border-white/10 bg-black/70 text-gray-400'
           }`}
         >
-          All
+          Sve
         </button>
 
         {Object.keys(categoryColors).map(
@@ -673,7 +687,7 @@ export default function MapView() {
                   : 'border-white/10 bg-black/70 text-gray-400'
               }`}
             >
-              {category}
+              {categoryLabels[category]}
             </button>
           )
         )}
@@ -685,7 +699,7 @@ export default function MapView() {
 
       <div className="absolute top-4 left-3 z-20 hidden sm:block w-52 rounded border border-white/10 bg-black/80 p-3 backdrop-blur-md">
         <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
-          Priority Levels
+          Razine prioriteta
         </div>
 
         <div className="space-y-2">
@@ -705,8 +719,8 @@ export default function MapView() {
                   }}
                 />
 
-                <span className="text-xs capitalize text-gray-300">
-                  {priority}
+                <span className="text-xs text-gray-300">
+                  {priorityLabels[priority]}
                 </span>
               </div>
             )
@@ -720,14 +734,14 @@ export default function MapView() {
 
       <div className="absolute bottom-0 left-0 right-0 z-20 hidden sm:flex h-12 items-center justify-center border-t border-white/10 bg-black/70 text-[10px] uppercase tracking-[0.25em] text-gray-500 backdrop-blur-md">
         {selectedCategory === 'all'
-          ? `${events.length} active reports loaded`
+          ? `${events.length} aktivnih prijava`
           : `${
               events.filter(
                 (e) =>
                   e.category ===
                   selectedCategory
               ).length
-            } ${selectedCategory} reports`}
+            } prijava (${categoryLabels[selectedCategory]})`}
       </div>
     </div>
   )

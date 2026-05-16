@@ -10,6 +10,11 @@ type UpdateItem = {
   timestamp: string;
 };
 
+const statusLabels: Record<string, string> = {
+  fixed: "Riješeno",
+  "in progress": "U tijeku",
+};
+
 export default function LiveFeedPanel({
   open,
   onClose,
@@ -62,7 +67,7 @@ export default function LiveFeedPanel({
         </span>
 
         <span className="text-orange-500 font-semibold text-sm">
-          LIVE UPDATES
+          AŽURIRANJA UŽIVO
         </span>
 
         <button
@@ -77,7 +82,7 @@ export default function LiveFeedPanel({
       <div className="p-4 text-sm text-gray-300 space-y-3 overflow-y-auto">
 
         <div className="text-gray-500 text-xs">
-          Real-time infrastructure status
+          Stanje infrastrukture u stvarnom vremenu
         </div>
 
         {data.map((item) => (
@@ -94,11 +99,11 @@ export default function LiveFeedPanel({
                     : "text-orange-400 font-semibold"
                 }
               >
-                {item.status.toUpperCase()}
+                {(statusLabels[item.status.toLowerCase()] ?? item.status).toUpperCase()}
               </span>
 
               <span className="text-xs text-gray-500">
-                {new Date(item.timestamp).toLocaleString()}
+                {new Date(item.timestamp).toLocaleString("hr-HR")}
               </span>
             </div>
 

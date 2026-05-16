@@ -10,8 +10,8 @@ export default function Footer() {
           </h2>
 
           <p className="mt-2 text-sm text-gray-400 max-w-xl">
-            The official road health reporting platform for the City of Split.
-            Built with citizens, for citizens.
+            Službena platforma za prijavu stanja cesta Grada Splita.
+            Stvoreno s građanima, za građane.
           </p>
 
           <p className="mt-1 text-xs text-gray-500">
@@ -22,33 +22,33 @@ export default function Footer() {
         {/* GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-          {/* PLATFORM */}
+          {/* PLATFORMA */}
           <div>
             <h3 className="text-sm font-semibold text-white mb-3">
-              Platform
+              Platforma
             </h3>
 
             <ul className="space-y-2 text-sm">
-              <li className="hover:text-orange-400 cursor-pointer">Report an Issue</li>
-              <li className="hover:text-orange-400 cursor-pointer">Live Map</li>
-              <li className="hover:text-orange-400 cursor-pointer">Status Updates</li>
-              <li className="hover:text-orange-400 cursor-pointer">Statistics</li>
-              <li className="hover:text-orange-400 cursor-pointer">How It Works</li>
+              <li className="hover:text-orange-400 cursor-pointer">Prijavi problem</li>
+              <li className="hover:text-orange-400 cursor-pointer">Mapa uživo</li>
+              <li className="hover:text-orange-400 cursor-pointer">Ažuriranja statusa</li>
+              <li className="hover:text-orange-400 cursor-pointer">Statistika</li>
+              <li className="hover:text-orange-400 cursor-pointer">Kako funkcionira</li>
             </ul>
           </div>
 
-          {/* CITY */}
+          {/* GRAD */}
           <div>
             <h3 className="text-sm font-semibold text-white mb-3">
-              City
+              Grad
             </h3>
 
             <ul className="space-y-2 text-sm">
-              <li className="hover:text-orange-400 cursor-pointer">City of Split</li>
-              <li className="hover:text-orange-400 cursor-pointer">Communal Services</li>
-              <li className="hover:text-orange-400 cursor-pointer">Open Data</li>
-              <li className="hover:text-orange-400 cursor-pointer">Press</li>
-              <li className="hover:text-orange-400 cursor-pointer">Contact</li>
+              <li className="hover:text-orange-400 cursor-pointer">Grad Split</li>
+              <li className="hover:text-orange-400 cursor-pointer">Komunalne službe</li>
+              <li className="hover:text-orange-400 cursor-pointer">Otvoreni podaci</li>
+              <li className="hover:text-orange-400 cursor-pointer">Mediji</li>
+              <li className="hover:text-orange-400 cursor-pointer">Kontakt</li>
             </ul>
           </div>
         </div>
@@ -57,13 +57,13 @@ export default function Footer() {
         <div className="mt-10 pt-6 border-t border-white/10 flex flex-col md:flex-row justify-between gap-4 text-xs text-gray-500">
 
           <div>
-            © 2026 RoadMint · City of Split Road Health Service
+            © 2026 RoadMint · Služba za stanje cesta Grada Splita
           </div>
 
           <div className="flex gap-4">
-            <span className="hover:text-orange-400 cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-orange-400 cursor-pointer">Terms of Use</span>
-            <span className="hover:text-orange-400 cursor-pointer">Accessibility</span>
+            <span className="hover:text-orange-400 cursor-pointer">Pravila privatnosti</span>
+            <span className="hover:text-orange-400 cursor-pointer">Uvjeti korištenja</span>
+            <span className="hover:text-orange-400 cursor-pointer">Pristupačnost</span>
           </div>
 
         </div>
