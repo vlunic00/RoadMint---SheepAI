@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Header from "../components/header";
-import LiveFeedStatus from "../components/liveFeedStatus";
+import LiveFeedPanel from "../components/liveFeedStatus";
+import Footer from "../components/footer";
+
+
 
 export const metadata: Metadata = {
   title: "RoadMint",
@@ -19,8 +22,9 @@ export default function RootLayout({
         <Header />
         {children}
         <div className="hidden md:flex items-center gap-3">
-        <LiveFeedStatus />
+        <LiveFeedPanel />
       </div>
+      <Footer />
       </body>
     </html>
   );
