@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "SheepAI Road Assessor",
+    "slug": "sheepai-road-assessor",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SheepAI to scan the road surface for potholes and pavement damage.",
+          "microphonePermission": "Allow SheepAI to record road assessment clips.",
+          "recordAudioAndroid": false
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow SheepAI to scan the road surface for potholes and pavement damage.",
+        "NSMicrophoneUsageDescription": "Allow SheepAI to record road assessment clips."
+      }
+    },
+    "android": {
+      "permissions": [
+        "CAMERA"
+      ],
+      "package": "com.sheepai.roadassessor"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
