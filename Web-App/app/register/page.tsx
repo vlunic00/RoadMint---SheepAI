@@ -14,7 +14,7 @@ export default function RegisterPage() {
 
   function validateEmail() {
     const ok = EMAIL_RE.test(email);
-    setEmailError(ok || email === "" ? "" : "Enter a valid email address");
+    setEmailError(ok || email === "" ? "" : "Unesite ispravnu email adresu");
     return ok;
   }
 
@@ -22,13 +22,13 @@ export default function RegisterPage() {
     <main className="auth">
       <div className="auth-box">
         <nav className="auth-tabs">
-          <Link href="/login" className="auth-tab">Sign in</Link>
-          <Link href="/register" className="auth-tab active">Create account</Link>
+          <Link href="/login" className="auth-tab">Prijava</Link>
+          <Link href="/register" className="auth-tab active">Registracija</Link>
         </nav>
 
         <div className="field">
           <div className="field-head">
-            <span className="label">Full name</span>
+            <span className="label">Ime i prezime</span>
           </div>
           <label className="input">
             <User />
@@ -38,13 +38,13 @@ export default function RegisterPage() {
 
         <div className="field">
           <div className="field-head">
-            <span className="label">Email address</span>
+            <span className="label">Email adresa</span>
           </div>
           <label className={emailError ? "input input-error" : "input"}>
             <Mail />
             <input
               type="email"
-              placeholder="you@split.hr"
+              placeholder="vi@split.hr"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onBlur={validateEmail}
@@ -55,11 +55,11 @@ export default function RegisterPage() {
 
         <div className="field">
           <div className="field-head">
-            <span className="label">Password</span>
+            <span className="label">Lozinka</span>
           </div>
           <label className="input">
             <Lock />
-            <input type={showPwd ? "text" : "password"} placeholder="Min. 8 characters" />
+            <input type={showPwd ? "text" : "password"} placeholder="Najmanje 8 znakova" />
             <button type="button" className="icon-btn" onClick={() => setShowPwd(!showPwd)}>
               {showPwd ? <EyeOff /> : <Eye />}
             </button>
@@ -68,7 +68,7 @@ export default function RegisterPage() {
 
         <div className="field">
           <div className="field-head">
-            <span className="label">Confirm password</span>
+            <span className="label">Potvrdi lozinku</span>
           </div>
           <label className="input">
             <Lock />
@@ -82,8 +82,8 @@ export default function RegisterPage() {
         <label className="terms">
           <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
           <span>
-            I agree to the <a href="#" className="link">Terms of Service</a> and{" "}
-            <a href="#" className="link">Privacy Policy</a> of the City of Split Road Health Platform.
+            Slažem se s <a href="#" className="link">Uvjetima korištenja</a> i{" "}
+            <a href="#" className="link">Pravilima privatnosti</a> platforme Grada Splita za stanje cesta.
           </span>
         </label>
 
@@ -93,15 +93,15 @@ export default function RegisterPage() {
           disabled={!agreed}
           onClick={validateEmail}
         >
-          Create account <Arrow />
+          Registracija <Arrow />
         </button>
-        {!agreed && <p className="field-error">You must accept the terms to register</p>}
+        {!agreed && <p className="field-error">Morate prihvatiti uvjete za registraciju</p>}
 
         <p className="auth-alt">
-          Already have an account? <Link href="/login" className="link">Sign in</Link>
+          Već imate račun? <Link href="/login" className="link">Prijavite se</Link>
         </p>
 
-        <p className="auth-foot">Official platform of Grad Split — Road Maintenance Division</p>
+        <p className="auth-foot">Službena platforma Grada Splita, Odjel za održavanje cesta</p>
       </div>
     </main>
   );

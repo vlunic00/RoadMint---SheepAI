@@ -11,10 +11,25 @@ interface EventData {
     longitude: number
   }
   macAddress: string
-  category: 'pothole' | 'crack' | 'debris' | 'flooding'
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  category:
+    | 'pothole'
+    | 'crack'
+    | 'debris'
+    | 'flooding'
+
+  priority:
+    | 'very-low'
+    | 'low'
+    | 'medium'
+    | 'high'
+    | 'critical'
+
   timestamp: string
 }
+
+// ============================================
+// CATEGORY COLORS
+// ============================================
 
 const categoryColors: Record<string, string> = {
   pothole: '#FF6B6B',
@@ -23,135 +38,681 @@ const categoryColors: Record<string, string> = {
   flooding: '#4ECDC4',
 }
 
-const prioritySize: Record<string, number> = {
-  low: 8,
-  medium: 12,
-  high: 16,
-  critical: 20,
+// ============================================
+// PRIORITY COLORS
+// ============================================
+
+const priorityColors: Record<string, string> = {
+  'very-low': '#22c55e',
+  low: '#84cc16',
+  medium: '#eab308',
+  high: '#f97316',
+  critical: '#ef4444',
 }
+
+// ============================================
+// MAP PRESETS
+// ============================================
+
+const MAP_VIEWS = {
+  FLAT: {
+    style: 'mapbox://styles/mapbox/dark-v11',
+    pitch: 0,
+    bearing: 0,
+    fog: false,
+    buildings: false,
+    enhancedRoads: false,
+    grid: false,
+  },
+
+  CINEMATIC: {
+    style:
+      'mapbox://styles/mapbox/navigation-night-v1',
+
+    pitch: 45,
+    bearing: -17,
+
+    fog: true,
+    buildings: true,
+    enhancedRoads: true,
+    grid: true,
+  },
+}
+
+// ============================================
+// CHANGE THIS ONLY
+// ============================================
+
+// const ACTIVE_VIEW = MAP_VIEWS.CINEMATIC
+const ACTIVE_VIEW = MAP_VIEWS.FLAT
+
+// ============================================
+// SPLIT
+// ============================================
+
+const SPLIT_CENTER: [number, number] = [
+  16.4402,
+  43.5110,
+]
+
+import { useLiveOpen } from "@/contexts/LiveOpenContext"
 
 export default function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null)
-  const map = useRef<mapboxgl.Map | null>(null)
-  const [events, setEvents] = useState<EventData[]>([])
+  const { liveOpen } = useLiveOpen()
 
-  // Load JSON data
+  const map = useRef<mapboxgl.Map | null>(null)
+
+  const markersRef = useRef<mapboxgl.Marker[]>(
+    []
+  )
+
+  const [events, setEvents] = useState<
+    EventData[]
+  >([])
+
+  const [selectedCategory, setSelectedCategory] =
+    useState<string>('all')
+
+  // ============================================
+  // LOAD EVENTS
+  // ============================================
+
   useEffect(() => {
     const loadEvents = async () => {
       try {
-        const response = await fetch('/data/events.json')
-        const data: EventData[] = await response.json()
+        const response = await fetch(
+          '/data/events.json'
+        )
+
+        const data: EventData[] =
+          await response.json()
+
         setEvents(data)
       } catch (error) {
-        console.error('Failed to load events:', error)
+        console.error(
+          'Failed to load events:',
+          error
+        )
       }
     }
+
     loadEvents()
   }, [])
 
-  // Initialize map
+  // ============================================
+  // INIT MAP
+  // ============================================
+
   useEffect(() => {
     if (!mapContainer.current) return
+    if (map.current) return
 
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
+    mapboxgl.accessToken =
+      process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-74.5, 40],
-      zoom: 10,
+
+      style: ACTIVE_VIEW.style,
+
+      center: SPLIT_CENTER,
+      zoom: 13.2,
+
+      pitch: ACTIVE_VIEW.pitch,
+      bearing: ACTIVE_VIEW.bearing,
+
+      antialias: true,
+    })
+
+    // ============================================
+    // CONTROLS
+    // ============================================
+
+    const nav = new mapboxgl.NavigationControl({
+      visualizePitch: false,
+      showCompass: false,
+      showZoom: true,
+    })
+
+    map.current.addControl(nav, 'bottom-right')
+
+    // ============================================
+    // MAP STYLE ENHANCEMENTS
+    // ============================================
+
+    map.current.on('style.load', () => {
+      if (!map.current) return
+
+      const layers =
+        map.current.getStyle().layers || []
+
+      // ============================================
+      // ENHANCED ROADS
+      // ============================================
+
+      if (ACTIVE_VIEW.enhancedRoads) {
+        layers.forEach((layer) => {
+          if (
+            layer.type === 'line' &&
+            layer.id.includes('road')
+          ) {
+            try {
+              map.current?.setPaintProperty(
+                layer.id,
+                'line-color',
+                '#5f5f5f'
+              )
+
+              map.current?.setPaintProperty(
+                layer.id,
+                'line-opacity',
+                0.55
+              )
+            } catch {}
+          }
+        })
+      }
+
+      // ============================================
+      // 3D BUILDINGS
+      // ============================================
+
+      if (ACTIVE_VIEW.buildings) {
+        const labelLayerId = layers.find(
+          (layer) =>
+            layer.type === 'symbol' &&
+            layer.layout &&
+            (layer.layout as any)['text-field']
+        )?.id
+
+        if (
+          labelLayerId &&
+          !map.current.getLayer(
+            '3d-buildings'
+          )
+        ) {
+          map.current.addLayer(
+            {
+              id: '3d-buildings',
+              source: 'composite',
+              'source-layer': 'building',
+              filter: [
+                '==',
+                'extrude',
+                'true',
+              ],
+
+              type: 'fill-extrusion',
+
+              minzoom: 14,
+
+              paint: {
+                'fill-extrusion-color':
+                  '#1a1a1a',
+
+                'fill-extrusion-height': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  14,
+                  0,
+                  15,
+                  ['get', 'height'],
+                ],
+
+                'fill-extrusion-base': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  14,
+                  0,
+                  15,
+                  ['get', 'min_height'],
+                ],
+
+                'fill-extrusion-opacity':
+                  0.55,
+              },
+            },
+            labelLayerId
+          )
+        }
+      }
+
+      // ============================================
+      // FOG
+      // ============================================
+
+      if (ACTIVE_VIEW.fog) {
+        map.current.setFog({
+          color: 'rgb(15,15,20)',
+
+          'high-color':
+            'rgb(30,30,40)',
+
+          'horizon-blend': 0.04,
+
+          'space-color':
+            'rgb(5,5,8)',
+
+          'star-intensity': 0.15,
+        })
+      }
     })
 
     return () => {
-      if (map.current) map.current.remove()
+      markersRef.current.forEach((marker) =>
+        marker.remove()
+      )
+
+      markersRef.current = []
+
+      map.current?.remove()
+      map.current = null
     }
   }, [])
 
-  // Add event markers
+  // ============================================
+  // RESIZE MAP WHEN LIVE PANEL CHANGES
   useEffect(() => {
-    if (!map.current || events.length === 0) return
+    if (!map.current) return
 
-    events.forEach((event) => {
-      const el = document.createElement('div')
-      const size = prioritySize[event.priority]
-      const color = categoryColors[event.category]
+    const resizeMap = () => {
+      map.current?.resize()
+    }
 
-      el.style.width = `${size}px`
-      el.style.height = `${size}px`
-      el.style.backgroundColor = color
-      el.style.borderRadius = '50%'
-      el.style.cursor = 'pointer'
-      el.style.border = '2px solid rgba(255,255,255,0.3)'
-      el.style.boxShadow = `0 0 ${size}px ${color}80`
-      el.style.transition = 'all 0.2s'
+    window.requestAnimationFrame(resizeMap)
+    const timeout = window.setTimeout(resizeMap, 250)
 
-      el.addEventListener('mouseenter', () => {
-        el.style.boxShadow = `0 0 ${size + 4}px ${color}`
-        el.style.transform = 'scale(1.2)'
-      })
+    return () => window.clearTimeout(timeout)
+  }, [liveOpen])
 
-      el.addEventListener('mouseleave', () => {
-        el.style.boxShadow = `0 0 ${size}px ${color}80`
-        el.style.transform = 'scale(1)'
-      })
+  // ============================================
+  // RENDER MARKERS
+  // ============================================
 
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
-        <div class="text-sm space-y-2">
-          <div><strong>Category:</strong> ${event.category}</div>
-          <div><strong>Priority:</strong> <span class="capitalize">${event.priority}</span></div>
-          <div><strong>MAC:</strong> ${event.macAddress}</div>
-          <div><strong>Location:</strong> ${event.geolocation.latitude.toFixed(4)}, ${event.geolocation.longitude.toFixed(4)}</div>
-          <div><strong>Time:</strong> ${new Date(event.timestamp).toLocaleString()}</div>
+  useEffect(() => {
+    if (!map.current) return
+    if (events.length === 0) return
+
+    // REMOVE OLD MARKERS
+
+    markersRef.current.forEach((marker) =>
+      marker.remove()
+    )
+
+    markersRef.current = []
+
+    // FILTER EVENTS
+
+    const filteredEvents =
+      selectedCategory === 'all'
+        ? events
+        : events.filter(
+            (event) =>
+              event.category ===
+              selectedCategory
+          )
+
+    filteredEvents.forEach((event) => {
+      const wrapper =
+        document.createElement('div')
+
+      const dot =
+        document.createElement('div')
+
+      const color =
+        priorityColors[event.priority]
+
+      wrapper.style.cursor = 'pointer'
+
+      wrapper.style.display = 'flex'
+
+      wrapper.style.alignItems = 'center'
+
+      wrapper.style.justifyContent = 'center'
+
+      // ============================================
+      // MARKER STYLE
+      // ============================================
+
+      dot.style.width = `16px`
+      dot.style.height = `16px`
+
+      dot.style.backgroundColor = color
+
+      dot.style.borderRadius = '999px'
+
+      dot.style.border =
+        '2px solid rgba(255,255,255,0.35)'
+
+      dot.style.boxShadow = `
+        0 0 12px ${color},
+        0 0 24px ${color}80
+      `
+
+      dot.style.transition =
+        'all 0.2s ease'
+
+      wrapper.appendChild(dot)
+
+      // ============================================
+      // HOVER
+      // ============================================
+
+      wrapper.addEventListener(
+        'mouseenter',
+        () => {
+          dot.style.boxShadow = `
+            0 0 18px ${color},
+            0 0 36px ${color}
+          `
+
+          dot.style.border =
+            '2px solid rgba(255,255,255,0.8)'
+        }
+      )
+
+      wrapper.addEventListener(
+        'mouseleave',
+        () => {
+          dot.style.boxShadow = `
+            0 0 12px ${color},
+            0 0 24px ${color}80
+          `
+
+          dot.style.border =
+            '2px solid rgba(255,255,255,0.35)'
+        }
+      )
+
+      // ============================================
+      // POPUP
+      // ============================================
+
+      const formattedTimestamp = new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(new Date(event.timestamp))
+
+      const popup = new mapboxgl.Popup({
+        offset: 18,
+        closeButton: true,
+      }).setHTML(`
+        <div style="
+          max-width:260px;
+          background:#111;
+          color:white;
+          font-family:Inter,sans-serif;
+          padding:8px;
+          box-sizing:border-box;
+          word-break:break-word;
+        ">
+          <div style="
+            font-size:14px;
+            font-weight:700;
+            margin-bottom:8px;
+            text-transform:capitalize;
+            color:${color};
+          ">
+            ${event.category}
+          </div>
+
+          <div style="
+            font-size:12px;
+            line-height:1.6;
+          ">
+            <div>
+              <strong>Category:</strong>
+              ${event.category}
+            </div>
+
+            <div>
+              <strong>Priority:</strong>
+              ${event.priority}
+            </div>
+
+            <div>
+              <strong>Latitude:</strong>
+              ${event.geolocation.latitude}
+            </div>
+
+            <div>
+              <strong>Longitude:</strong>
+              ${event.geolocation.longitude}
+            </div>
+
+            <div>
+              <strong>Timestamp:</strong>&nbsp;${formattedTimestamp}
+            </div>
+          </div>
         </div>
       `)
 
-      new mapboxgl.Marker({ element: el })
-        .setLngLat([event.geolocation.longitude, event.geolocation.latitude])
+      const marker = new mapboxgl.Marker({
+        element: wrapper,
+        anchor: 'center',
+      })
+        .setLngLat([
+          event.geolocation.longitude,
+          event.geolocation.latitude,
+        ])
         .setPopup(popup)
-        .addTo(map.current)
+        .addTo(map.current!)
+
+      markersRef.current.push(marker)
     })
-  }, [events])
+  }, [events, selectedCategory])
 
   return (
-    <div className="relative w-full h-full bg-black">
-      <div ref={mapContainer} className="w-full h-full" />
+    <div className="relative h-full w-full overflow-hidden bg-black">
+      {/* ============================================ */}
+      {/* GLOBAL STYLES */}
+      {/* ============================================ */}
 
-      {/* Legend */}
-      <div className="absolute top-3 left-3 w-40 p-3 bg-black/80 backdrop-blur border border-white/10 rounded z-20">
-        <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">
-          Legend
+      <style jsx global>{`
+        .mapboxgl-popup-content {
+          background: #111 !important;
+          color: white !important;
+
+          border: 1px solid
+            rgba(
+              255,
+              255,
+              255,
+              0.08
+            ) !important;
+
+          border-radius: 14px !important;
+
+          box-shadow: 0 10px 40px
+            rgba(0, 0, 0, 0.45) !important;
+
+          padding: 12px !important;
+        }
+
+        .mapboxgl-popup-tip {
+          border-top-color: #111 !important;
+          border-bottom-color: #111 !important;
+        }
+
+        .mapboxgl-popup-close-button {
+          color: rgba(
+            255,
+            255,
+            255,
+            0.6
+          );
+
+          font-size: 16px;
+
+          padding: 6px 8px;
+        }
+
+        .mapboxgl-popup-close-button:hover {
+          background: transparent !important;
+          color: white;
+        }
+
+        /* CONTROLS */
+
+        .mapboxgl-ctrl-group {
+          background: rgba(
+            10,
+            10,
+            10,
+            0.9
+          ) !important;
+
+          border: 1px solid
+            rgba(
+              255,
+              255,
+              255,
+              0.08
+            ) !important;
+
+          overflow: hidden;
+
+          border-radius: 12px !important;
+
+          backdrop-filter: blur(10px);
+        }
+
+        .mapboxgl-ctrl-group button {
+          background: transparent !important;
+        }
+
+        .mapboxgl-ctrl-group button span {
+          filter: invert(1);
+        }
+
+        .mapboxgl-ctrl-bottom-right {
+          bottom: 70px;
+          right: 12px;
+        }
+      `}</style>
+
+      {/* ============================================ */}
+      {/* MAP */}
+      {/* ============================================ */}
+
+      <div
+        ref={mapContainer}
+        className="h-full w-full"
+      />
+
+      {/* ============================================ */}
+      {/* GRID OVERLAY */}
+      {/* ============================================ */}
+
+      {ACTIVE_VIEW.grid && (
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_35%)]">
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)
+              `,
+              backgroundSize:
+                '40px 40px',
+            }}
+          />
+        </div>
+      )}
+
+      {/* ============================================ */}
+      {/* FILTERS */}
+      {/* ============================================ */}
+
+      <div className="absolute top-4 right-3 z-20 flex gap-2 whitespace-nowrap overflow-x-auto pr-3 sm:flex-wrap sm:overflow-visible sm:pr-0">
+        <button
+          onClick={() =>
+            setSelectedCategory('all')
+          }
+          className={`rounded border px-2 sm:px-3 py-1 text-[10px] sm:text-xs uppercase tracking-wider transition ${
+            selectedCategory === 'all'
+              ? 'border-orange-500 bg-orange-500 text-black'
+              : 'border-white/10 bg-black/70 text-gray-400'
+          }`}
+        >
+          All
+        </button>
+
+        {Object.keys(categoryColors).map(
+          (category) => (
+            <button
+              key={category}
+              onClick={() =>
+                setSelectedCategory(category)
+              }
+              className={`rounded border px-2 sm:px-3 py-1 text-[10px] sm:text-xs uppercase tracking-wider transition ${
+                selectedCategory === category
+                  ? 'border-orange-500 bg-orange-500 text-black'
+                  : 'border-white/10 bg-black/70 text-gray-400'
+              }`}
+            >
+              {category}
+            </button>
+          )
+        )}
+      </div>
+
+      {/* ============================================ */}
+      {/* LEGEND */}
+      {/* ============================================ */}
+
+      <div className="absolute top-4 left-3 z-20 hidden sm:block w-52 rounded border border-white/10 bg-black/80 p-3 backdrop-blur-md">
+        <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+          Priority Levels
         </div>
 
         <div className="space-y-2">
-          <div className="text-xs">
-            <div className="font-semibold text-gray-300 mb-2">Category</div>
-            {Object.entries(categoryColors).map(([category, color]) => (
-              <div key={category} className="flex items-center gap-2 mb-1.5">
+          {Object.entries(priorityColors).map(
+            ([priority, color]) => (
+              <div
+                key={priority}
+                className="flex items-center gap-2"
+              >
                 <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-gray-400 capitalize">{category}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-white/10 pt-2 mt-2">
-            <div className="font-semibold text-gray-300 mb-2">Priority</div>
-            {Object.entries(prioritySize).map(([priority, size]) => (
-              <div key={priority} className="flex items-center gap-2 mb-1.5">
-                <div
-                  className="rounded-full flex-shrink-0 bg-blue-400"
+                  className="h-3 w-3 rounded-full"
                   style={{
-                    width: `${size}px`,
-                    height: `${size}px`,
+                    backgroundColor:
+                      color,
+
+                    boxShadow: `0 0 12px ${color}`,
                   }}
                 />
-                <span className="text-gray-400 capitalize">{priority}</span>
+
+                <span className="text-xs capitalize text-gray-300">
+                  {priority}
+                </span>
               </div>
-            ))}
-          </div>
+            )
+          )}
         </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* STATUS */}
+      {/* ============================================ */}
+
+      <div className="absolute bottom-0 left-0 right-0 z-20 hidden sm:flex h-12 items-center justify-center border-t border-white/10 bg-black/70 text-[10px] uppercase tracking-[0.25em] text-gray-500 backdrop-blur-md">
+        {selectedCategory === 'all'
+          ? `${events.length} active reports loaded`
+          : `${
+              events.filter(
+                (e) =>
+                  e.category ===
+                  selectedCategory
+              ).length
+            } ${selectedCategory} reports`}
       </div>
     </div>
   )
