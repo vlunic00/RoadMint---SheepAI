@@ -325,11 +325,11 @@ export default function MapView() {
 
       {/* Top bar removed per request */}
 
-      {/* FILTERS */}
-      <div className="absolute top-16 right-3 z-20 flex flex-wrap gap-2">
+      {/* FILTERS (mobile-friendly: horizontal scroll + compact buttons) */}
+      <div className="absolute top-4 right-3 z-20 flex gap-2 whitespace-nowrap overflow-x-auto pr-3 sm:flex-wrap sm:overflow-visible sm:pr-0">
         <button
           onClick={() => setSelectedCategory('all')}
-          className={`rounded border px-3 py-1 text-xs uppercase tracking-wider transition ${
+          className={`rounded border px-2 sm:px-3 py-1 text-[10px] sm:text-xs uppercase tracking-wider transition ${
             selectedCategory === 'all'
               ? 'border-orange-500 bg-orange-500 text-black'
               : 'border-white/10 bg-black/70 text-gray-400'
@@ -345,7 +345,7 @@ export default function MapView() {
               onClick={() =>
                 setSelectedCategory(category)
               }
-              className={`rounded border px-3 py-1 text-xs uppercase tracking-wider transition ${
+              className={`rounded border px-2 sm:px-3 py-1 text-[10px] sm:text-xs uppercase tracking-wider transition ${
                 selectedCategory === category
                   ? 'border-orange-500 bg-orange-500 text-black'
                   : 'border-white/10 bg-black/70 text-gray-400'
@@ -357,8 +357,8 @@ export default function MapView() {
         )}
       </div>
 
-      {/* LEGEND */}
-      <div className="absolute top-16 left-3 z-20 w-52 rounded border border-white/10 bg-black/80 p-3 backdrop-blur-md">
+      {/* LEGEND (hidden on small screens) */}
+      <div className="absolute top-4 left-3 z-20 hidden sm:block w-52 rounded border border-white/10 bg-black/80 p-3 backdrop-blur-md">
         <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
           Priority Levels
         </div>
@@ -387,8 +387,8 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* STATUS BAR */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 flex h-12 items-center justify-center border-t border-white/10 bg-black/70 text-[10px] uppercase tracking-[0.25em] text-gray-500 backdrop-blur-md">
+      {/* STATUS BAR (hidden on small screens) */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 hidden sm:flex h-12 items-center justify-center border-t border-white/10 bg-black/70 text-[10px] uppercase tracking-[0.25em] text-gray-500 backdrop-blur-md">
         {selectedCategory === 'all'
           ? `${events.length} active reports loaded`
           : `${
